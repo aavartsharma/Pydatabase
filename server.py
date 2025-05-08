@@ -1,9 +1,10 @@
-import sqlite3
-from fastapi import FastAPI, HTTPException, Depends, Request, Body
+"""provide a fast a api to my syslink modules to queay data in pydatabase"""
+
+from database import PyDatabase
+from security import SecurityManager
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
-from security import SecurityManager
-from database import PyDatabase
+from fastapi import FastAPI, HTTPException, Depends, Request, Body
 # ... (previous imports and setup) ...
 
 app = FastAPI()
@@ -56,3 +57,11 @@ async def get_table_schema(table_name: str,_: Dict[str, Any] = Depends(SecurityM
         return {"schema": db.get_table_schema(table_name)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get(f"/login")
+async def client_login(user: str,):
+    pass
+
+@app.get("/signup")
+async def client_signup(user: str, password):
+    pass 
