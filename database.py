@@ -2,6 +2,7 @@ import sqlite3  # for database
 import logging   # logging libary
 from config import Config    # config.py
 # from pathlib import Path  
+from syslinkPy import Enum
 from datetime import datetime   # for datetime
 from security import SecurityManager   # security.py
 from typing import Any, Dict, List, Optional, Union   # for type annotation
@@ -9,11 +10,40 @@ from typing import Any, Dict, List, Optional, Union   # for type annotation
 logger = logging.getLogger(__name__)
 
 class PyDatabase:
-    def __init__(self, db_name: str):
-        self.db_name = db_name
+
+    class status(Enum):
+        success:str
+        failed:str
+
+    def __init__(self):
         self.security = SecurityManager()
-        self.db_path = Config.DATABASE_DIR / f"{db_name}.db" 
+        self.db_path = Config.DATABASE_DIR / "base.db" 
         self.conn = self._initialize_database()
+
+        self._execute_query_admin("""   
+            CREATE TABLE IF NOT EXISTS query_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                query TEXT,
+                timestamp TEXT,
+                user TEXT,
+                status TEXT
+            )
+        """)
+
+        self._execute_query_admin("""
+            CREATE TABLE IF NOT EXiSTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                token TEXT
+            )
+        """)
+
+        self._execute_query_admin("""
+            CREATE TABLE IF NOT EXISTS users_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_login TIME
+            )
+        """)
         
     def _initialize_database(self) -> sqlite3.Connection:
         """Initialize SQLite database with encryption"""
@@ -26,19 +56,10 @@ class PyDatabase:
         
         # Initialize query logging table and for now this should be changed
         # there should be table crearte ion on intalixing
-        conn.execute("""   
-            CREATE TABLE IF NOT EXISTS query_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                query TEXT,
-                timestamp TEXT,
-                user TEXT,
-                status TEXT
-            )
-        """)
         
         return conn
     
-    def _log_query(self, query: str, user: str, status: str = "success") -> None:
+    def _log_query(self, query: str, user: str, status: str = status.success) -> None:
         """Log SQL query execution"""
         try:
             self.conn.execute(
@@ -49,51 +70,55 @@ class PyDatabase:
         except Exception as e:
             logger.error(f"Failed to log query: {e}")
     
-    def execute_query(self, query: str, params: Optional[tuple] = None,user: str = "system") -> Dict[str, Any]:
+    def execute_query(self, user: str,query: str, params: Optional[tuple] = None) -> Dict[str, Any]:
         """Execute a SQL query with security checks"""
-        # List of dangerous SQL operations to block
-        dangerous_operations: list[str] = [
-            "DROP", "TRUNCATE", "DELETE FROM", "ALTER", 
-            "MODIFY", "RENAME", "VACUUM", "ATTACH"
-        ]
-        
-        # Check for dangerous operations
-        query_upper: str = query.upper()
-        for operation in dangerous_operations:  # this should be changed a file can do this but should have key and for the table
-            if operation in query_upper:
-                self._log_query(query, user, "blocked")
-                raise ValueError(f"Operation not allowed: {operation}")
-        
         try:
             cursor = self.conn.cursor()
             if params:
                 cursor.execute(query, params)
             else:
                 cursor.execute(query)
-            
-            # Handle different query types
-            if query_upper.startswith("SELECT"):
-                columns = [description[0] for description in cursor.description]
-                results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-                self._log_query(query, user)
-                return {
-                    "type": "select",
-                    "columns": columns,
-                    "rows": results,
-                    "row_count": len(results)
-                }
-            else:
-                self.conn.commit()
-                self._log_query(query, user)
-                return {
-                    "type": "update",
-                    "rows_affected": cursor.rowcount
-                }
+            self.conn.commit()
+            columns = [description[0] for description in cursor.description]
+            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            self._log_query(query, user)
+            return {
+                "columns": columns,
+                "rows": results,
+                "row_count": len(results),
+                "rows_affected": cursor.rowcount
+            }
                 
         except Exception as e:
-            self._log_query(query, user, f"error: {str(e)}")
+            self._log_query(query, user, self.status.failed)
             raise
     
+    def _execute_query_admin(self,query: str, parmas: tuple | None = None) -> Dict:
+        try: 
+            self.conn.cursor().execute(query)
+            self.conn.commit()
+            self._log_query(query,"admin",self.status.success)
+        except Exception as e:
+            self._log_query(query,"admin",self.status.failed)
+            raise e
+    
+    def drop_table(self,tablename:str):
+        self.conn.cursor().execute(f"DROP TABLE {tablename}")
+        self.conn.commit()
+        pass
+
+    def clear_table(self,tablename:str):
+        self.conn.cursor().execute(f"DELETE FROM {tablename}")
+        self.conn.commit()
+        pass
+
+    def clear_all(self):
+        self.conn.cursor().execute("""SELECT 'DROP TABLE IF EXISTS "' || name || '";'
+FROM sqlite_master
+WHERE type='table' AND name NOT LIKE 'sqlite_%';""")
+        self.conn.commit()
+        pass
+
     def create_table(self, table_name: str, columns: Dict[str, str], user: str = "system") -> Dict[str, Any]:
         """Create a new table with specified columns"""
         # Validate table name (prevent SQL injection)
@@ -118,7 +143,7 @@ class PyDatabase:
         )
         """
         
-        return self.execute_query(query, user=user)
+        return self.execute_query(user,query)
     
     def get_table_schema(self, table_name: str) -> List[Dict[str, str]]:
         """Get schema information for a table"""

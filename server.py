@@ -1,5 +1,5 @@
 """provide a fast a api to my syslink modules to queay data in pydatabase"""
-
+import sqlite3
 from database import PyDatabase
 from security import SecurityManager
 from pydantic import BaseModel, Field
@@ -50,7 +50,7 @@ async def create_table(request: CreateTableRequest, current_user: Dict[str, Any]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get(f"/table/{table_name}/schema")
+@app.get("/table/{table_name}/schema")
 async def get_table_schema(table_name: str,_: Dict[str, Any] = Depends(SecurityManager.verify_token)):
     """Get schema information for a table"""
     try:
@@ -58,8 +58,10 @@ async def get_table_schema(table_name: str,_: Dict[str, Any] = Depends(SecurityM
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get(f"/login")
-async def client_login(user: str,):
+@app.get("/programs/{name}")
+async def client_login(name: str,token: str):
+    # if name and token matched in database table
+    db.execute_query("select * from users")
     pass
 
 @app.get("/signup")

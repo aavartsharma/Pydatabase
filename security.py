@@ -27,7 +27,8 @@ class SecurityManager():
         key_file = Config.DATABASE_DIR / ".key"
         if key_file.exists():
             return key_file.read_bytes()
-        
+            pass
+        Config.init()
         key = Fernet.generate_key()
         key_file.write_bytes(key)
         return key
