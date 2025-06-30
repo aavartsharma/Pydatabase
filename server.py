@@ -1,6 +1,7 @@
 """provide a fast a api to my syslink modules to queay data in pydatabase"""
 import sqlite3
-from database import PyDatabase
+import logger
+from database import PyDatabase_clinet
 from security import SecurityManager
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
@@ -8,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Depends, Request, Body
 # ... (previous imports and setup) ...
 
 app = FastAPI()
-db = PyDatabase()
+db = PyDatabase_clinet()
 
 class SQLQueryRequest(BaseModel):
     query: str
@@ -63,7 +64,3 @@ async def client_login(name: str,token: str):
     # if name and token matched in database table
     db.execute_query("select * from users")
     pass
-
-@app.get("/signup")
-async def client_signup(user: str, password):
-    pass 

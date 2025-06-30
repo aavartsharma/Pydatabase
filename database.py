@@ -1,5 +1,5 @@
 import sqlite3  # for database
-import logging   # logging libary
+import logger
 from config import Config    # config.py
 # from pathlib import Path  
 from syslinkPy import Enum
@@ -7,13 +7,13 @@ from datetime import datetime   # for datetime
 from security import SecurityManager   # security.py
 from typing import Any, Dict, List, Optional, Union   # for type annotation
 
-logger = logging.getLogger(__name__)
+logging = logger.Utility(__name__,Config.version,"Idon'tknow",Config.project_name)
+
+class status(Enum):
+    success:str
+    failed:str
 
 class PyDatabase:
-
-    class status(Enum):
-        success:str
-        failed:str
 
     def __init__(self):
         self.security = SecurityManager()
@@ -31,12 +31,17 @@ class PyDatabase:
         """)
 
         self._execute_query_admin("""
-            CREATE TABLE IF NOT EXiSTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                token TEXT
+            CREATE TABLE IF NOT EXiSTS applications (
+                Sno INTEGER AUTOINCREMENT,
+                Name TEXT,
+                ID TEXT,
+                Token TEXT,
+                joined DATE,
+                Active BOOL,
+                Owned_Tables JSON,
+                file_location TEXT,
             )
-        """)
+        """) 
 
         self._execute_query_admin("""
             CREATE TABLE IF NOT EXISTS users_log (
@@ -44,6 +49,7 @@ class PyDatabase:
                 last_login TIME
             )
         """)
+        
         
     def _initialize_database(self) -> sqlite3.Connection:
         """Initialize SQLite database with encryption"""
@@ -144,6 +150,9 @@ WHERE type='table' AND name NOT LIKE 'sqlite_%';""")
         """
         
         return self.execute_query(user,query)
+
+    def getallablenames(self):
+        pass
     
     def get_table_schema(self, table_name: str) -> List[Dict[str, str]]:
         """Get schema information for a table"""
@@ -158,3 +167,28 @@ WHERE type='table' AND name NOT LIKE 'sqlite_%';""")
             }
             for row in cursor.fetchall()
         ]
+
+class PyDatabase_clinet(Pydatabase):
+
+    def __init__(self):
+        pass
+
+    def create_table(self):
+        pass
+
+    def Drop_table(self):
+        pass
+    
+    def insert(self):
+        pass
+
+    def delete(self):
+        pass
+    
+    def get_table_schema(self):
+        pass
+    
+    def altertable():
+        pass
+
+

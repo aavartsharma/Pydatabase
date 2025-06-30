@@ -3,6 +3,9 @@ from pathlib import Path
 from datetime import datetime
 
 class Config:
+    project_name="Pydatabase"
+    version = "xxxxxxxxx"
+
     # Base configuration
     PROJECT_ROOT = Path(__file__).parent
     DATABASE_DIR = PROJECT_ROOT / "base"  # database should be under pybase control
