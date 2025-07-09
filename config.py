@@ -7,6 +7,7 @@ class Config:
     PROJECT_ROOT = Path(__file__).parent
     DATABASE_DIR = PROJECT_ROOT / "base"  # database should be under pybase control
     LOGS_DIR = PROJECT_ROOT / "logs"
+    LOGGING_YML = "logging.yaml"
     
     # Security settings
     

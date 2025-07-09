@@ -1,18 +1,5 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+import uvicorn
+from config import Config
 
-app = FastAPI()
-
-# In-memory database (for demonstration purposes)
-items = []
-
-# Pydantic model for item data
-class Item(BaseModel):
-    name: str
-    description: str
-
-# Create an item
-@app.post("/items/", response_model=Item)
-async def create_item(item: Item):
-    items.append(item)
-    return item
+if __name__ == "__main__":
+    uvicorn.run("server:app",host=Config.HOST,port=Config.PORT,reload=True,log_config=Config.LOGGING_YML)

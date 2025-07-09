@@ -1,7 +1,8 @@
 import requests
-from typing import Any, Dict, List, Optional
 import urllib3
+import pandas as pd
 from config import Config
+from typing import Any, Dict, List, Optional
 
 # Disable SSL verification warnings for self-signed certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -11,12 +12,12 @@ class PyDatabaseClient:
         self.base_url = f"https://{host}:{port}"
         self.token: Optional[str] = None
         
-    def login(self, password: str) -> bool:
+    def login(self, token: str) -> bool:
         """Login to the database server"""
         try:
             response = requests.post(
                 f"{self.base_url}/login",
-                json={"password": password},
+                json={"token": token},
                 verify=False
             )
             if response.status_code == 200:
@@ -52,8 +53,7 @@ class PyDatabaseClient:
         """Find documents in a collection"""
         return self._make_request("POST", f"{collection}/find", query)
     
-    def update(self, collection: str, query: Dict[str, Any], 
-               update_data: Dict[str, Any]) -> int:
+    def update(self, collection: str, query: Dict[str, Any], update_data: Dict[str, Any]) -> int:
         """Update documents in a collection"""
         response = self._make_request(
             "POST",

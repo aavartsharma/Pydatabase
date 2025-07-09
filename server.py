@@ -35,6 +35,8 @@ async def execute_query(request: SQLQueryRequest,current_user: Dict[str, Any] = 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# @app.post("/login") 
+
 @app.post("/table")
 async def create_table(request: CreateTableRequest, current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
     """Create a new table"""
@@ -67,3 +69,7 @@ async def client_login(name: str,token: str):
 @app.get("/signup")
 async def client_signup(user: str, password):
     pass 
+
+@app.get("/test")
+async def test():
+    return {'status':"pass"}

@@ -22,29 +22,50 @@ class PyDatabase:
 
         self._execute_query_admin("""   
             CREATE TABLE IF NOT EXISTS query_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                query TEXT,
-                timestamp TEXT,
-                user TEXT,
-                status TEXT
+                Sno INTEGER PRIMARY KEY AUTOINCREMENT,
+                Query TEXT,
+                Timestamp TEXT,
+                Client TEXT,
+                Status TEXT
             )
         """)
 
         self._execute_query_admin("""
-            CREATE TABLE IF NOT EXiSTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                token TEXT
+            CREATE TABLE IF NOT EXISTS client (
+                Name TEXT,
+                Id TEXT PRIMARY KEY,
+                Token TEXT,
+                Joined TEXT,
+                Active TEXT,
+                File_Location TEXT
             )
         """)
 
         self._execute_query_admin("""
-            CREATE TABLE IF NOT EXISTS users_log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                last_login TIME
+            CREATE TABLE IF NOT EXISTS table_owner (
+                Table_Id TEXT PRIMARY KEY,
+                Table_Name TEXT,
+                Owner_Id TEXT,
+                Owner_name TEXT
+            ) 
+        """)
+
+        self._execute_query_admin("""
+            CREATE TABLE IF NOT EXISTS client_log (
+                Log_Id TEXT PRIMARY KEY,
+                Client_Id TEXT,
+                Client_Name TEXT,
+                logged_In_At TEXT,
+                logged_Out_At TEXT
             )
         """)
         
+    def update_date():
+        pass
+    
+    def insert_date():
+        pass
+
     def _initialize_database(self) -> sqlite3.Connection:
         """Initialize SQLite database with encryption"""
         # Create database directory if it doesn't exist
@@ -53,14 +74,32 @@ class PyDatabase:
         # Create new database connection
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
-        
+        print("row factory : ",conn.row_factory)
         # Initialize query logging table and for now this should be changed
         # there should be table crearte ion on intalixing
         
         return conn
+
+    def _insert_query(self,table_name, **column) -> status:
+        try:
+            self.conn.execute(
+                f"INSERT INTO ({",".join([i for i in column])}) VALUES ({",".join(*["?" for i in range(len(column))])})",
+                (column[i] for i in column)
+            )
+            self.conn.commit()
+            return status.success
+        except Exception as e:
+            logger.error(f"Failed to log Query: {e}")
+            return status.failed
     
     def _log_query(self, query: str, user: str, status: str = status.success) -> None:
         """Log SQL query execution"""
+        try:
+            _insert_query(self,"query_log",query=query,timestamp=datetime.now.isoformat(),user=user,status = status)
+
+        except Exception as e:
+            logger.error(f"Failed to log query: {e}")
+
         try:
             self.conn.execute(
                 "INSERT INTO query_log (query, timestamp, user, status) VALUES (?, ?, ?, ?)",
@@ -70,7 +109,7 @@ class PyDatabase:
         except Exception as e:
             logger.error(f"Failed to log query: {e}")
     
-    def execute_query(self, user: str,query: str, params: Optional[tuple] = None) -> Dict[str, Any]:
+    def _execute_query(self, user: str,query: str, params: Optional[tuple] = None) -> Dict[str, Any]:
         """Execute a SQL query with security checks"""
         try:
             cursor = self.conn.cursor()
@@ -102,26 +141,27 @@ class PyDatabase:
             self._log_query(query,"admin",self.status.failed)
             raise e
     
-    def drop_table(self,tablename:str):
+    def _drop_table(self,tablename:str):
         self.conn.cursor().execute(f"DROP TABLE {tablename}")
         self.conn.commit()
         pass
 
-    def clear_table(self,tablename:str):
+    def _clear_table(self,tablename:str):
         self.conn.cursor().execute(f"DELETE FROM {tablename}")
         self.conn.commit()
         pass
 
-    def clear_all(self):
+    def _clear_all(self):
         self.conn.cursor().execute("""SELECT 'DROP TABLE IF EXISTS "' || name || '";'
 FROM sqlite_master
-WHERE type='table' AND name NOT LIKE 'sqlite_%';""")
+WHERE type='table' AND nam;w
+                                   :e NOT LIKE 'sqlite_%';""")
         self.conn.commit()
         pass
 
     def create_table(self, table_name: str, columns: Dict[str, str], user: str = "system") -> Dict[str, Any]:
         """Create a new table with specified columns"""
-        # Validate table name (prevent SQL injection)
+        # dfjlkjlsjdfljsldfj Validate table name (prevent SQL injection)
         if not table_name.isalnum():
             raise ValueError("Table name must be alphanumeric")
         
@@ -142,7 +182,7 @@ WHERE type='table' AND name NOT LIKE 'sqlite_%';""")
             {', '.join(column_defs)}
         )
         """
-        
+        print(query) 
         return self.execute_query(user,query)
     
     def get_table_schema(self, table_name: str) -> List[Dict[str, str]]:
