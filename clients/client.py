@@ -8,9 +8,9 @@ from typing import Any, Dict, List, Optional
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 class PyDatabaseClient:
-    def __init__(self, host: str = "localhost", port: int = Config.PORT):
-        self.base_url = f"https://{host}:{port}"
-        self.token: Optional[str] = None
+    def __init__(self):
+        self.base_url = f"https://{Config.host}:{Config.port}" # should be from envirment variable
+        self.token: Optional[str] = None   # will be provide by sysllink
         
     def login(self, token: str) -> bool:
         """Login to the database server"""
@@ -27,8 +27,7 @@ class PyDatabaseClient:
         except requests.RequestException:
             return False
     
-    def _make_request(self, method: str, endpoint: str, 
-                     data: Optional[Dict[str, Any]] = None) -> Any:
+    def _make_request(self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None) -> Any:
         """Make an authenticated request to the server"""
         if not self.token:
             raise ValueError("Not authenticated. Call login() first")
@@ -49,9 +48,6 @@ class PyDatabaseClient:
         response = self._make_request("POST", collection, document)
         return response["_id"]
     
-    def find(self, collection: str, query: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Find documents in a collection"""
-        return self._make_request("POST", f"{collection}/find", query)
     
     def update(self, collection: str, query: Dict[str, Any], update_data: Dict[str, Any]) -> int:
         """Update documents in a collection"""

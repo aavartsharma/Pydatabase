@@ -15,10 +15,10 @@ pydatabase/
 ├── clients/
 │   ├── web_client.js    # JavaScript client
 │   └── PyDatabaseClient.kt  # Kotlin client
-├── data/                # Database storage (created at runtime)
-├── logs/               # Log files (created at runtime)
+├── base/                # application storage (created at runtime)
+│   ├── data/            # database files (created at runtime)
+│   └── logs/            # Log files (created at runtime)
 ├── requirements.txt    # Python dependencies
-├── .env               # Environment variables
 └── README.md          # Documentation
 ```
 
@@ -149,18 +149,6 @@ This file lists all the Python libraries required to run the project.
 
 ---
 
-### 8. `.env` - Environment Variables
-This file stores sensitive configuration variables such as the secret key and encryption key.
-
-- **Purpose**:
-  - Keep sensitive data out of the codebase.
-  - Allow easy configuration without modifying the code.
-
-- **How It Connects**:
-  - Accessed by `config.py` to load sensitive settings.
-
----
-
 ### 9. `README.md` - Project Documentation
 This file provides an overview of the project, setup instructions, and usage examples.
 
@@ -230,5 +218,3 @@ This file provides an overview of the project, setup instructions, and usage exa
    - Add automatic backup functionality for the SQLite database.
 
 ---
-
-This document should provide a clear understanding of how the PyDatabase project is structured and how its components interact. If you have any questions or need further clarification, feel free to ask!

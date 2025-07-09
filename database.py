@@ -1,5 +1,5 @@
 import sqlite3  # for database
-import logging   # logging libary
+import logger
 from config import Config    # config.py
 # from pathlib import Path  
 from syslinkPy import Enum
@@ -7,13 +7,13 @@ from datetime import datetime   # for datetime
 from security import SecurityManager   # security.py
 from typing import Any, Dict, List, Optional, Union   # for type annotation
 
-logger = logging.getLogger(__name__)
+logging = logger.Utility(__name__,Config.version,"Idon'tknow",Config.project_name)
+
+class status(Enum):
+    success:str
+    failed:str
 
 class PyDatabase:
-
-    class status(Enum):
-        success:str
-        failed:str
 
     def __init__(self):
         self.security = SecurityManager()
@@ -39,7 +39,7 @@ class PyDatabase:
                 Active TEXT,
                 File_Location TEXT
             )
-        """)
+        """) 
 
         self._execute_query_admin("""
             CREATE TABLE IF NOT EXISTS table_owner (
@@ -59,13 +59,7 @@ class PyDatabase:
                 logged_Out_At TEXT
             )
         """)
-        
-    def update_date():
-        pass
     
-    def insert_date():
-        pass
-
     def _initialize_database(self) -> sqlite3.Connection:
         """Initialize SQLite database with encryption"""
         # Create database directory if it doesn't exist
@@ -184,6 +178,9 @@ WHERE type='table' AND nam;w
         """
         print(query) 
         return self.execute_query(user,query)
+
+    def getallablenames(self):
+        pass
     
     def get_table_schema(self, table_name: str) -> List[Dict[str, str]]:
         """Get schema information for a table"""
@@ -198,3 +195,28 @@ WHERE type='table' AND nam;w
             }
             for row in cursor.fetchall()
         ]
+
+class PyDatabase_clinet(Pydatabase):
+
+    def __init__(self):
+        pass
+
+    def create_table(self):
+        pass
+
+    def Drop_table(self):
+        pass
+    
+    def insert(self):
+        pass
+
+    def delete(self):
+        pass
+    
+    def get_table_schema(self):
+        pass
+    
+    def altertable():
+        pass
+
+
