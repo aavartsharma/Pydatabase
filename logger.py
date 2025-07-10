@@ -25,8 +25,9 @@ class Config:
 
 class Utility:
     
-    def __init__(self, config: Config):
+    def __init__(self, config: Config,**moreinfo):
         self.config = config
+        self.moreinfo = moreinfo
         self.start_time = datetime.now()
         logger.info(f"Starting {self.config.app_name} v{self.config.version}")
     

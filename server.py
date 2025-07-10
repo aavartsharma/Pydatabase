@@ -61,6 +61,5 @@ async def get_table_schema(table_name: str,_: Dict[str, Any] = Depends(SecurityM
 
 @app.get("/programs/{name}")
 async def client_login(name: str,token: str):
-    # if name and token matched in database table
-    db.execute_query("select * from users")
-    pass
+    # if name and token matched in database table and make isolaition
+    return db.execute_query("select * from users")

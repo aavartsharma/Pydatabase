@@ -7,13 +7,85 @@ from datetime import datetime   # for datetime
 from security import SecurityManager   # security.py
 from typing import Any, Dict, List, Optional, Union   # for type annotation
 
-logging = logger.Utility(__name__,Config.version,"Idon'tknow",Config.project_name)
+databaseConfig = logger.Config(__name__,Config.version,"idon'tknow",Config.project_name)
+
+logging = logger.Utility(databaseConfig)
 
 class status(Enum):
     success:str
     failed:str
 
-class PyDatabase:
+class PyDatabase_clinet():
+
+    def __init__(self):
+        pass
+
+    def insert(self):
+        pass
+
+    def get_table_schema(self, table_name: str) -> List[Dict[str, str]]:
+        """Get schema information for a table"""
+        cursor = self.conn.cursor()
+        cursor.execute(f"PRAGMA table_info({table_name})")
+        return [
+            {
+                "name": row[1],
+                "type": row[2],
+                "notnull": bool(row[3]),
+                "pk": bool(row[5])
+            }
+            for row in cursor.fetchall()
+        ]
+    
+    def create_table(self, table_name: str, columns: Dict[str, str], user: str = "system") -> Dict[str, Any]:
+        """Create a new table with specified columns"""
+        # Validate table name (prevent SQL injection)
+        if not table_name.isalnum():
+            raise ValueError("Table name must be alphanumeric")
+        
+        # Build CREATE TABLE query
+        column_defs = []
+        for col_name, col_type in columns.items():
+            if not col_name.isalnum():
+                raise ValueError(f"Invalid column name: {col_name}")
+            if col_type.upper() not in {"TEXT", "INTEGER", "REAL", "BLOB", "NULL"}:
+                raise ValueError(f"Invalid column type: {col_type}")
+            column_defs.append(f"{col_name} {col_type}")
+            
+        query = f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            {', '.join(column_defs)}
+        )
+        """
+        
+        return self.execute_query(user,query)
+    
+    def Drop_table(self):
+        self.conn.cursor().execute(f"DROP TABLE {tablename}")
+        self.conn.commit()
+    
+    def clear_table(self):
+        self.conn.cursor().execute(f"DELETE FROM {tablename}")
+        self.conn.commit()
+    
+    def clear_all(self):
+        self.conn.cursor().execute("""SELECT 'DROP TABLE IF EXISTS "' || name || '";'
+FROM sqlite_master
+WHERE type='table' AND name NOT LIKE 'sqlite_%';""")
+        self.conn.commit()
+    
+
+    def delete(self):
+        pass
+
+    def altertable():
+        pass
+
+
+class PyDatabase(PyDatabase_clinet):
 
     def __init__(self):
         self.security = SecurityManager()
@@ -31,15 +103,15 @@ class PyDatabase:
         """)
 
         self._execute_query_admin("""
-            CREATE TABLE IF NOT EXiSTS applications (
-                Sno INTEGER AUTOINCREMENT,
+            CREATE TABLE IF NOT EXISTS applications (
+                Sno INTEGER,
+                ID TEXT PRIMARY KEY,
                 Name TEXT,
-                ID TEXT,
                 Token TEXT,
-                joined DATE,
+                Joined DATE,
                 Active BOOL,
                 Owned_Tables JSON,
-                file_location TEXT,
+                File_Location TEXT
             )
         """) 
 
@@ -103,92 +175,13 @@ class PyDatabase:
         try: 
             self.conn.cursor().execute(query)
             self.conn.commit()
-            self._log_query(query,"admin",self.status.success)
+            self._log_query(query,"admin",status.success)
         except Exception as e:
-            self._log_query(query,"admin",self.status.failed)
+            self._log_query(query,"admin",status.failed)
             raise e
-    
-    def drop_table(self,tablename:str):
-        self.conn.cursor().execute(f"DROP TABLE {tablename}")
-        self.conn.commit()
-        pass
 
-    def clear_table(self,tablename:str):
-        self.conn.cursor().execute(f"DELETE FROM {tablename}")
-        self.conn.commit()
-        pass
-
-    def clear_all(self):
-        self.conn.cursor().execute("""SELECT 'DROP TABLE IF EXISTS "' || name || '";'
-FROM sqlite_master
-WHERE type='table' AND name NOT LIKE 'sqlite_%';""")
-        self.conn.commit()
-        pass
-
-    def create_table(self, table_name: str, columns: Dict[str, str], user: str = "system") -> Dict[str, Any]:
-        """Create a new table with specified columns"""
-        # Validate table name (prevent SQL injection)
-        if not table_name.isalnum():
-            raise ValueError("Table name must be alphanumeric")
-        
-        # Build CREATE TABLE query
-        column_defs = []
-        for col_name, col_type in columns.items():
-            if not col_name.isalnum():
-                raise ValueError(f"Invalid column name: {col_name}")
-            if col_type.upper() not in {"TEXT", "INTEGER", "REAL", "BLOB", "NULL"}:
-                raise ValueError(f"Invalid column type: {col_type}")
-            column_defs.append(f"{col_name} {col_type}")
-            
-        query = f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            {', '.join(column_defs)}
-        )
-        """
-        
-        return self.execute_query(user,query)
 
     def getallablenames(self):
         pass
     
-    def get_table_schema(self, table_name: str) -> List[Dict[str, str]]:
-        """Get schema information for a table"""
-        cursor = self.conn.cursor()
-        cursor.execute(f"PRAGMA table_info({table_name})")
-        return [
-            {
-                "name": row[1],
-                "type": row[2],
-                "notnull": bool(row[3]),
-                "pk": bool(row[5])
-            }
-            for row in cursor.fetchall()
-        ]
-
-class PyDatabase_clinet(Pydatabase):
-
-    def __init__(self):
-        pass
-
-    def create_table(self):
-        pass
-
-    def Drop_table(self):
-        pass
-    
-    def insert(self):
-        pass
-
-    def delete(self):
-        pass
-    
-    def get_table_schema(self):
-        pass
-    
-    def altertable():
-        pass
-
 
