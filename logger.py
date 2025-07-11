@@ -1,34 +1,36 @@
+import os
 import sys
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('app.log'),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-
-logger = logging.getLogger(__name__)
 
 class Config:
-    def __init__(self,utility,version,created,project,**detail):
-        self.app_name = utility
-        self.version = version
-        self.created_at = created
-        self.author = project
+    def __init__(self,**detail):
+        for i in ("name",'version','detail'):
+            if i not in detail:
+                raise AttributeError(f"{i} is not specfiled")
+        for i in detail:
+            super().__setattr__(i,detail[i])
         self.detail = detail
 
 class Utility:
-    
-    def __init__(self, config: Config):
-        self.config = config
+    def __init__(self, **detail):
+        self.config = Config(**detail)
         self.start_time = datetime.now()
-        logger.info(f"Starting {self.config.app_name} v{self.config.version}")
+        self.basename= lambda x: os.path.basename(x)
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s',
+            handlers=[
+                logging.FileHandler(f'logs/{self.basename(__file__)}.log'),
+                logging.StreamHandler(sys.stdout)
+            ]
+        )
+
+        self.logger = logging.getLogger(self.basename(self.config.name))
+        self.logger.info(f"Starting {self.basename(self.config.name)} v{self.config.version}")
     
     def debug():
         # add debug to the app.log
