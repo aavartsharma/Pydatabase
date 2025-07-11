@@ -1,17 +1,30 @@
 import sqlite3  # for database
 import logger
 from config import Config    # config.py
-# from pathlib import Path  
 from syslinkPy import Enum
 from datetime import datetime   # for datetime
 from security import SecurityManager   # security.py
 from typing import Any, Dict, List, Optional, Union   # for type annotation
 
-logging = logger.Utility(__name__,Config.version,"Idon'tknow",Config.project_name)
+logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger #(__name__,Config.version,"Idon'tknow",Config.project_name)
+# print(__file__)
 
 class status(Enum):
     success:str
     failed:str
+
+class Column:
+    def __init__(self,name:str ,typeof:str, isprimekey: bool = False , AUTOINCREMENT = False):
+        if(not isprimekey and AUTOINCREMENT):
+            raise ValueError("autoincrement is only allowed for primarykey")
+        self.name = name
+        self.typeof = typeof.capitalize()
+        self.isprimekey = isprimekey
+        self.AUTOINCREMENT = AUTOINCREMENT
+    
+    def querystr(self) -> str:
+        return f'{name} {typeof} {"PRIMARY KEY" if isprimekey else ""} {"AUTOINCREMENT" if AUTOINCREMENT else ""}'
+
 
 class PyDatabase:
 
@@ -32,11 +45,12 @@ class PyDatabase:
 
         self._execute_query_admin("""
             CREATE TABLE IF NOT EXISTS client (
-                Name TEXT,
                 Id TEXT PRIMARY KEY,
+                Name TEXT,
                 Token TEXT,
                 Joined TEXT,
                 Active TEXT,
+                Owned_Tables TEXT,
                 File_Location TEXT
             )
         """) 
@@ -59,7 +73,8 @@ class PyDatabase:
                 logged_Out_At TEXT
             )
         """)
-    
+        self.conn.commit()
+
     def _initialize_database(self) -> sqlite3.Connection:
         """Initialize SQLite database with encryption"""
         # Create database directory if it doesn't exist
@@ -74,34 +89,41 @@ class PyDatabase:
         
         return conn
 
-    def _insert_query(self,table_name, **column) -> status:
+    def _insert_query(self,table_name: str, **column) -> status:
+        # print( f'INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})')
+        # logging.info(f"Inputs are {tuple(column[i] for i in column)}")
+        # logging.debug("sfsfs")
         try:
             self.conn.execute(
-                f"INSERT INTO ({",".join([i for i in column])}) VALUES ({",".join(*["?" for i in range(len(column))])})",
-                (column[i] for i in column)
+                f"""INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})""",
+                tuple(column[i] for i in column)
             )
             self.conn.commit()
             return status.success
         except Exception as e:
-            logger.error(f"Failed to log Query: {e}")
+            logging.error(f"Failed to log Query: {e}")
+            raise e
             return status.failed
+    
     
     def _log_query(self, query: str, user: str, status: str = status.success) -> None:
         """Log SQL query execution"""
         try:
-            _insert_query(self,"query_log",query=query,timestamp=datetime.now.isoformat(),user=user,status = status)
+            # print(_insert_query)
+            self._insert_query("query_log",Query=query,Timestamp=datetime.now().isoformat(" "),Client=user,Status = status)
 
         except Exception as e:
-            logger.error(f"Failed to log query: {e}")
+           logging.error(f"Failed to log query: {e}")
+           raise e
 
-        try:
-            self.conn.execute(
-                "INSERT INTO query_log (query, timestamp, user, status) VALUES (?, ?, ?, ?)",
-                (query, datetime.now().isoformat(), user, status)
-            )
-            self.conn.commit()
-        except Exception as e:
-            logger.error(f"Failed to log query: {e}")
+        #try:
+         #   self.conn.execute(
+          #      "INSERT INTO query_log (query, timestamp, user, status) VALUES (?, ?, ?, ?)",
+           #     (query, datetime.now().isoformat(), user, status)
+            #)
+            #self.conn.commit()
+        #except Exception as e:
+            #logger.error(f"Failed to log query: {e}")
     
     def _execute_query(self, user: str,query: str, params: Optional[tuple] = None) -> Dict[str, Any]:
         """Execute a SQL query with security checks"""
@@ -126,13 +148,14 @@ class PyDatabase:
             self._log_query(query, user, self.status.failed)
             raise
     
-    def _execute_query_admin(self,query: str, parmas: tuple | None = None) -> Dict:
+    def _execute_query_admin(self,query: str, parmas: tuple | None = None) -> Dict: # here is no sql injection security
         try: 
             self.conn.cursor().execute(query)
             self.conn.commit()
-            self._log_query(query,"admin",self.status.success)
+            # logging.info(f"Query is {query}")
+            self._log_query(query,"admin",status.success)
         except Exception as e:
-            self._log_query(query,"admin",self.status.failed)
+            self._log_query(query,"admin",status.failed)
             raise e
     
     def _drop_table(self,tablename:str):
@@ -140,7 +163,7 @@ class PyDatabase:
         self.conn.commit()
         pass
 
-    def _clear_table(self,tablename:str):
+    def _delete_table(self,tablename:str):
         self.conn.cursor().execute(f"DELETE FROM {tablename}")
         self.conn.commit()
         pass
@@ -153,33 +176,23 @@ WHERE type='table' AND nam;w
         self.conn.commit()
         pass
 
-    def create_table(self, table_name: str, columns: Dict[str, str], user: str = "system") -> Dict[str, Any]:
+    def create_table(self, table_name: str, user: str = "system", *columns: List[Column]) -> Dict[str, Any]:
         """Create a new table with specified columns"""
-        # dfjlkjlsjdfljsldfj Validate table name (prevent SQL injection)
+        # Validate table name (prevent SQL injection)
         if not table_name.isalnum():
             raise ValueError("Table name must be alphanumeric")
-        
-        # Build CREATE TABLE query
-        column_defs = []
-        for col_name, col_type in columns.items():
-            if not col_name.isalnum():
-                raise ValueError(f"Invalid column name: {col_name}")
-            if col_type.upper() not in {"TEXT", "INTEGER", "REAL", "BLOB", "NULL"}:
-                raise ValueError(f"Invalid column type: {col_type}")
-            column_defs.append(f"{col_name} {col_type}")
             
         query = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            {', '.join(column_defs)}
+            {', '.join(columns.querystr())}
         )
         """
         print(query) 
         return self.execute_query(user,query)
 
-    def getallablenames(self):
+    def verify_token(self, client_token: str) -> bool:
+        query = f"""select * from client where Id='{client_token}'"""
+        _execute_query("system",)
         pass
     
     def get_table_schema(self, table_name: str) -> List[Dict[str, str]]:
@@ -195,28 +208,11 @@ WHERE type='table' AND nam;w
             }
             for row in cursor.fetchall()
         ]
-
-class PyDatabase_clinet(Pydatabase):
-
-    def __init__(self):
-        pass
-
-    def create_table(self):
-        pass
-
-    def Drop_table(self):
-        pass
-    
-    def insert(self):
-        pass
-
-    def delete(self):
-        pass
-    
-    def get_table_schema(self):
-        pass
-    
-    def altertable():
-        pass
-
+                                 
+if (__name__ == "__main__"):  # for test componett of this file
+    a = PyDatabase()._execute_query
+    b = PyDatabase()._insert_query
+    print(b)
+    # print(b("table_owner",Table_Id = "asdf", Table_name= "aavart",Owner_Id="sdfsdf",Owner_Name="sfsdf"))
+    print(a("system","select * from client"))
 

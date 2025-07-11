@@ -4,7 +4,7 @@ from datetime import datetime
 
 class Config:
     project_name="Pydatabase"
-    version = "xxxxxxxxx"
+    version = "1.0.1"
 
     # Base configuration
     PROJECT_ROOT = Path(__file__).parent
@@ -14,8 +14,6 @@ class Config:
     
     # Security settings
     
-    SECRET_KEY = os.getenv("SECRET_KEY", "your-super-secret-key-change-this")
-    ENCRYPTION_KEY = os.getenv("ENCRYPTION_KEY", "your-encryption-key-change-this")
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
     
     # Network settings
@@ -31,3 +29,5 @@ class Config:
         """Initialize required directories"""
         for directory in [Config.DATABASE_DIR, Config.LOGS_DIR]:
             directory.mkdir(exist_ok=True)
+        
+        # if(os.)

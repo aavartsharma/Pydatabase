@@ -1,11 +1,16 @@
 # Core dependencies
 cryptography>=41.0.0
-flask>=2.3.0
-flask-limiter>=3.5.0
+# flask>=2.3.0
+# flask-limiter>=3.5.0
 python-dotenv>=1.0.0
 requests>=2.31.0
 PyJWT>=2.8.0
 urllib3>=2.0.0
+unicorn>=0.35.0
+PyYAML>=6.0.2
+pandas>=2.3.1
+pydantic>=2.11.7
+fastapi>=0.116.0
 
 # Development
 pytest>=7.4.0

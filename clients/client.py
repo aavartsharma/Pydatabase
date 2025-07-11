@@ -10,7 +10,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 class PyDatabaseClient:
     def __init__(self):
         self.base_url = f"https://{Config.host}:{Config.port}" # should be from envirment variable
-        self.token: Optional[str] = None   # will be provide by sysllink
+        self.token: Optional[str] = None   # will be provide by sysllinkl
         
     def login(self, token: str) -> bool:
         """Login to the database server"""
@@ -57,8 +57,23 @@ class PyDatabaseClient:
             {"query": query, "update": update_data}
         )
         return response["updated_count"]
+
+    def create_table(self,table_name: str, columns: List[colums]):
+        pass
+
+    def insert(self,table_name: str,**data : Dict[str:str | int | float]):
+        pass
     
     def delete(self, collection: str, query: Dict[str, Any]) -> int:
         """Delete documents from a collection"""
         response = self._make_request("POST", f"{collection}/delete", query)
         return response["deleted_count"]
+
+    def Drop_table(self,table_name:str):
+        pass
+
+    def alter_table(self,table_name: str, **data):
+        pass
+
+    def get_schema(self, table_name: str):
+        passS
