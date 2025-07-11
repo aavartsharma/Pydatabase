@@ -42,7 +42,7 @@ async def execute_query(request: SQLQueryRequest,current_user: Dict[str, Any] = 
 async def create_table(client_token:str ,request: CreateTableRequest, current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
     """Create a new table"""
     try:
-        db.
+        # db.
         result = db.create_table(
             request.table_name,
             request.columns,
@@ -89,3 +89,4 @@ async def client_signup(user: str, password):
 @app.get("/test")
 async def test():
     return {'status':"pass"}
+

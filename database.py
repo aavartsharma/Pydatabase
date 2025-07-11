@@ -46,13 +46,13 @@ class PyDatabase:
 
         self._execute_query_admin("""
             CREATE TABLE IF NOT EXISTS client (
-                Name TEXT,
                 Id TEXT PRIMARY KEY,
+                Name TEXT,
                 Token TEXT,
                 Joined TEXT,
                 Active TEXT,
+                Owned_Tables JSON,
                 File_Location TEXT
-            )
         """) 
 
         self._execute_query_admin("""

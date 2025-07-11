@@ -16,8 +16,15 @@ class Config:
         self.detail = detail
 
 class Utility:
+<<<<<<< HEAD
     def __init__(self, **detail):
         self.config = Config(**detail)
+=======
+    
+    def __init__(self, config: Config,**moreinfo):
+        self.config = config
+        self.moreinfo = moreinfo
+>>>>>>> laptop
         self.start_time = datetime.now()
         self.basename= lambda x: os.path.basename(x)
         logging.basicConfig(
