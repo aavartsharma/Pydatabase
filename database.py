@@ -1,7 +1,6 @@
 import sqlite3  # for database
 import logger
 from config import Config    # config.py
-# from pathlib import Path  
 from syslinkPy import Enum
 from datetime import datetime   # for datetime
 from security import SecurityManager   # security.py
@@ -24,7 +23,7 @@ class Column:
         self.AUTOINCREMENT = AUTOINCREMENT
     
     def querystr(self) -> str:
-        return f"{name} {typeof} {"PRIMARY KEY" if isprimekey else ""} {"AUTOINCREMENT" if AUTOINCREMENT else ""}"
+        return f'{name} {typeof} {"PRIMARY KEY" if isprimekey else ""} {"AUTOINCREMENT" if AUTOINCREMENT else ""}'
 
 
 class PyDatabase:
@@ -51,8 +50,9 @@ class PyDatabase:
                 Token TEXT,
                 Joined TEXT,
                 Active TEXT,
-                Owned_Tables JSON,
+                Owned_Tables TEXT,
                 File_Location TEXT
+            )
         """) 
 
         self._execute_query_admin("""
@@ -89,13 +89,14 @@ class PyDatabase:
         
         return conn
 
-    def _insert_query(self,table_name, **column) -> status:
-        print( f"INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})")
-        # print(list((column[i] for i in column)))
+    def _insert_query(self,table_name: str, **column) -> status:
+        # print( f'INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})')
+        # logging.info(f"Inputs are {tuple(column[i] for i in column)}")
+        # logging.debug("sfsfs")
         try:
             self.conn.execute(
                 f"""INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})""",
-                (column[i] for i in column)
+                tuple(column[i] for i in column)
             )
             self.conn.commit()
             return status.success
@@ -104,13 +105,16 @@ class PyDatabase:
             raise e
             return status.failed
     
+    
     def _log_query(self, query: str, user: str, status: str = status.success) -> None:
         """Log SQL query execution"""
         try:
-           _insert_query("query_log",query=query,timestamp=datetime.now.isoformat(),user=user,status = status)
+            # print(_insert_query)
+            self._insert_query("query_log",Query=query,Timestamp=datetime.now().isoformat(" "),Client=user,Status = status)
 
         except Exception as e:
            logging.error(f"Failed to log query: {e}")
+           raise e
 
         #try:
          #   self.conn.execute(
@@ -148,6 +152,7 @@ class PyDatabase:
         try: 
             self.conn.cursor().execute(query)
             self.conn.commit()
+            # logging.info(f"Query is {query}")
             self._log_query(query,"admin",status.success)
         except Exception as e:
             self._log_query(query,"admin",status.failed)
@@ -176,15 +181,6 @@ WHERE type='table' AND nam;w
         # Validate table name (prevent SQL injection)
         if not table_name.isalnum():
             raise ValueError("Table name must be alphanumeric")
-        
-        # Build CREATE TABLE query
-        # column_defs = []
-        # for col_name, col_type in columns.items():
-        #     if not col_name.isalnum():
-        #         raise ValueError(f"Invalid column name: {col_name}")
-        #     if col_type.upper() not in {"TEXT", "INTEGER", "REAL", "BLOB", "NULL"}:
-        #         raise ValueError(f"Invalid column type: {col_type}")
-        #     column_defs.append(f"{col_name} {col_type}")
             
         query = f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
@@ -213,9 +209,10 @@ WHERE type='table' AND nam;w
             for row in cursor.fetchall()
         ]
                                  
-if (__name__ == "__main__"):
+if (__name__ == "__main__"):  # for test componett of this file
     a = PyDatabase()._execute_query
     b = PyDatabase()._insert_query
-    print(b("table_owner",Table_Id = "asdf", Table_name= "aavart",Owner_Id="sdfsdf",Owner_Name="sfsdf"))
+    print(b)
+    # print(b("table_owner",Table_Id = "asdf", Table_name= "aavart",Owner_Id="sdfsdf",Owner_Name="sfsdf"))
     print(a("system","select * from client"))
 

@@ -16,22 +16,15 @@ class Config:
         self.detail = detail
 
 class Utility:
-<<<<<<< HEAD
     def __init__(self, **detail):
         self.config = Config(**detail)
-=======
-    
-    def __init__(self, config: Config,**moreinfo):
-        self.config = config
-        self.moreinfo = moreinfo
->>>>>>> laptop
         self.start_time = datetime.now()
         self.basename= lambda x: os.path.basename(x)
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s',
             handlers=[
-                logging.FileHandler(f'logs/{self.basename(__file__)}.log'),
+                logging.FileHandler(f'logs/{self.basename(self.config.name)}.log'),
                 logging.StreamHandler(sys.stdout)
             ]
         )

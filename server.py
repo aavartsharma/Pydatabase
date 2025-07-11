@@ -1,12 +1,15 @@
 """provide a fast a api to my syslink modules to queay data in pydatabase"""
 import sqlite3
 import logger
+from config import Config
 from database import PyDatabase
 from security import SecurityManager
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException, Depends, Request, Body
 # ... (previous imports and setup) ...
+
+logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger
 
 app = FastAPI()
 db = PyDatabase()
