@@ -107,16 +107,21 @@ class PyDatabase():
         except Exception as e:
            logging.error(f"Failed to log query: {e}")
            raise e
-
-        #try:
-         #   self.conn.execute(
-          #      "INSERT INTO query_log (query, timestamp, user, status) VALUES (?, ?, ?, ?)",
-           #     (query, datetime.now().isoformat(), user, status)
-            #)
-            #self.conn.commit()
-        #except Exception as e:
-            #logger.error(f"Failed to log query: {e}")
     
+    def _insert_query(self,table_name: str, **column) -> status:
+        try:
+            self.conn.execute(
+                f"""INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})""",
+                tuple(column[i] for i in column)
+            )
+            self.conn.commit()
+            return status.success
+        except Exception as e:
+            logging.error(f"Failed to log Query: {e}")
+            raise e
+            return status.failed
+
+
     def _execute_query(self, user: str,query: str, params: Optional[tuple] = None) -> Dict[str, Any]:
         """Execute a SQL query with security checks"""
         try:
@@ -168,14 +173,7 @@ class PyDatabase():
 
     def insert_query(self,table_name: str, **column) -> status:
         try:
-            self.conn.execute(
-                f"""INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})""",
-                tuple(column[i] for i in column)
-            )
-            self.conn.commit()
-
-            self._execute_query(user, query)
-            return status.success
+            self._insert_query(table_name,**column)
 
         except sqlite3.OperationalError as e:
             loggin.warning(f"Schema of {table_name} is {self._table_schema(table_name)}")
