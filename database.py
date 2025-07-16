@@ -68,6 +68,7 @@ class PyDatabase():
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
         
+
         self._execute_query(conn,"""   
             CREATE TABLE IF NOT EXISTS query_log (
                 Sno INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,6 +100,7 @@ class PyDatabase():
             ) 
         """)
 
+
         self._execute_query(conn,"""
             CREATE TABLE IF NOT EXISTS client_log (
                 Log_Id TEXT PRIMARY KEY,
@@ -109,15 +111,42 @@ class PyDatabase():
             )
         """)
         return conn
+
+    def _insert_query(self,user: str,table_name: str, **column) -> status:
+        try:
+            query= f"""INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})"""
+            params= tuple(column[i] for i in column)
+            self._execute_query(user, query,parmas)
+            return status.success
+
+        except sqlite3.OperationalError as e:
+            loggin.warning(f"Schema of {table_name} is {self._table_schema(table_name)}")
+        except Exception as e:
+            logging.error(f"Failed to log Query: {e}")
+            raise e
+            return status.failed
     
-    def _execute_query(self,conn,query: str, params: tuple | None = None) -> Dict: # here is no sql injection security
+    def _log_query(self, query: str, user: str, status: str = status.success) -> None:
+        """Log SQL query execution"""
+        try:
+            # print(_insert_query)
+            self._insert_query("query_log",Query=query,Timestamp=datetime.now().isoformat(" "),Client=user,Status = status)
+
+        except Exception as e:
+           logging.error(f"Failed to log query: {e}")
+           raise e
+    
+    def _execute_query(self, user: str,query: str, params: Optional[tuple] = None) -> Dict[str, Any]:
+        """Execute a SQL query with security checks"""
+        _execute_query_admin(self.conn,query,params)
+    
+    def _execute_query_admin(self,cursor,query: str, parmas: tuple | None = None) -> Dict: # here is no sql injection security
         try: 
-            cursor = conn.cursor()
             if params:
                 cursor.execute(query, params)
             else:
                 cursor.execute(query)
-            conn.commit()
+            self.conn.commit()
             columns = lambda descrp: [description[0] for description in descrp] if descrp else None
             results = [dict(zip(columns(cursor.description), row)) for row in cursor.fetchall()]
             return {
@@ -229,7 +258,6 @@ class PyDatabase():
             logging.info(locals())
             logging.error(f"Error occured: {e}")
             raise e
-
 
     def verify_token(self, client_token: str) -> bool:
         query = f"""select * from client where Id='{client_token}'"""
