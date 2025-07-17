@@ -3,8 +3,8 @@ import jwt
 import base64
 from config import Config
 from typing import Any, Dict, Optional
-from datetime import datetime, timedelta
-from cryptography.fernet import Fernet
+from datetime import datetime,timedelta
+from cryptography.fernet import Fernet as Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 

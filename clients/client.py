@@ -1,5 +1,5 @@
-import requests
 import urllib3
+import requests
 import pandas as pd
 from config import Config
 from typing import Any, Dict, List, Optional

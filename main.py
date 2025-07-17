@@ -1,5 +1,5 @@
-import uvicorn
 import logger
+import uvicorn
 from config import Config
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger

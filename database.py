@@ -45,9 +45,9 @@ class PyDatabase():
 
         #-------- lambda function --------#
 
-        self._delete_table = lambda tablename: _execute_query(f"DELETE FROM {tablename}")
+        self._delete = lambda tablename: _execute_query(f"DELETE FROM {tablename}")
         self._drop_table = lambda tablename: _execute_query(f"DROP TABLE {tablename}")
-        self._drop_all = lambda drop_all: _execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
+        self._drop_all = lambda: _execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
 
 
     # def delete_table(self,tablename:str):
@@ -174,16 +174,20 @@ class PyDatabase():
 
     def _table_schema(self,table_name:str):
         rows = self._execute_query(f"PRAGMA table_info({table_name});")
-        return [
-            {
-                "name": row[1],
-                "type": row[2],
-                "notnull": bool(row[3]),
-                "pk": bool(row[5]),
-            }
-            for row in self.cursor.fetchall()
-        ]
+        return rows
+        # return [
+        #     {
+        #         "name": row[1],
+        #         "type": row[2],
+        #         "notnull": bool(row[3]),
+        #         "pk": bool(row[5]),
+        #     }
+        #     for row in rows
+        # ]
 
+    def _fetch_data(self,table_name: str):
+        result = self._execute_query(f"SELECT * from {table_name}")
+        return result
     # def _insert_query(self,table_name: str, **column) -> status:
     #     """dsfsadfasfasdfasfdsaf"""
     #     try:
@@ -204,11 +208,12 @@ class PyDatabase():
     #     _execute_query(self.conn,query,params)
     
 
-    def table_schema(self, table_name: str) -> List[Dict[str, str]]:
+    def table_schema(self,user, table_name: str) -> List[Dict[str, str]]:
         """Get schema information for a table"""
-        self._table_schema(table_name)
+        logging.info(f"User query - user:{user}, queryed: {table_schema.__name__}")
+        return self._table_schema(table_name)
 
-    def insert(self,table_name: str, **column) -> status:
+    def insert(self,user,table_name: str, **column) -> status:
         try:
             for i in column:
                 if keyword.iskeyword(i):
@@ -222,7 +227,7 @@ class PyDatabase():
             raise e
             return status.failed
     
-    def create_table(self, table_name: str, user: str = "system", *columns: List[Column]) -> Dict[str, Any]:
+    def create_table(self,user: str, table_name: str, *columns: List[Column]) -> Dict[str, Any]:
         """Create a new table with specified columns"""
         # Validate table name (prevent SQL injection)
         if table_name.isalnum():
@@ -231,9 +236,21 @@ class PyDatabase():
         for i in columns:
             if keyword.iskeyword(i.name):
                 raise ValueError(f"arg can't be a keyword , {i.name}")
-        return self._create_table(table_name,*columns)
-            
+        result = self._create_table(table_name,*columns)
+        result["status"] = status.success
+        return result
     
+    def delete():
+        pass
+    
+    def delete_all():
+        pass
+
+    def drop_table():
+        pass
+
+    def drop_all():
+        pass
 
     def verify_token(self, client_token: str) -> bool:
         query = f"""select * from client where Id='{client_token}'"""
@@ -243,6 +260,8 @@ class PyDatabase():
                                  
 if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
-    print(db.create_table("test_table2","Psudouser", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("classes", "INTEGER")))
+    print(db.create_table("aavart","test_table2", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("classes", "INTEGER")))
     # db.in
-    print(db.insert("test_table2",name="aavart sharma",classes=3))
+    # print(db.insert("test_table2",name="aavart sharma",classes=3))
+    print(db._fetch_data("aavart","test_table2"))
+    print(db.table_schema("aavart","test_table2"))

@@ -1,6 +1,6 @@
 """provide a fast a api to my syslink modules to queay data in pydatabase"""
-import sqlite3
 import logger
+import sqlite3
 from config import Config
 from database import PyDatabase
 from security import SecurityManager
