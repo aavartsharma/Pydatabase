@@ -2,7 +2,7 @@ import sqlite3  # for database
 import logger
 import keyword
 from config import Config    # config.py
-from syslinkPy import Enum
+from syslinkPy import Enum    # this is not any official libary in python
 from datetime import datetime   # for datetime
 from security import SecurityManager   # security.py
 from typing import Any, Dict, List, Optional, Union   # for type annotation
@@ -43,10 +43,10 @@ class PyDatabase():
         self.conn, self.cursor = self._initialize_database()
         # self.cursor = self.conn.cursor()
 
-        #-------- lambda function --------#
-
-        self._delete = lambda tablename: _execute_query(f"DELETE FROM {tablename}")
-        self._drop_table = lambda tablename: _execute_query(f"DROP TABLE {tablename}")
+        #-------- Private lambda function --------#
+        self._delete = lambda table_name, **conditaion: _execute_query(f"DELETE FROM {table_name} WHERE {" AND ".join([f'{row}={conditaion[row]}' for row in conditaion])}")
+        self._delete_all = lambda table_name: _execute_query(f"DELETE FROM {table_name}")
+        self._drop_table = lambda table_name: _execute_query(f"DROP TABLE {table_name}")
         self._drop_all = lambda: _execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
 
 
@@ -58,6 +58,8 @@ class PyDatabase():
 
     # def drop_all(self):
     #     self.conn.cursor().execute("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
+
+# -------------------- Private functions -------------------- #
 
     def _initialize_database(self) -> sqlite3.Connection:
         """Initialize SQLite database with encryption"""
@@ -188,25 +190,8 @@ class PyDatabase():
     def _fetch_data(self,table_name: str):
         result = self._execute_query(f"SELECT * from {table_name}")
         return result
-    # def _insert_query(self,table_name: str, **column) -> status:
-    #     """dsfsadfasfasdfasfdsaf"""
-    #     try:
-    #         self.conn.execute(
-    #             f"""INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})""",
-    #             tuple(column[i] for i in column)
-    #         )
-    #         self.conn.commit()
-    #         return status.success
-    #     except Exception as e:
-    #         logging.error(f"Failed to log Query: {e}")
-    #         raise e
-    #         return status.failed
 
-
-    # def _execute_query(self, user: str,query: str, params: Optional[tuple] = None) -> Dict[str, Any]:
-    #     """Execute a SQL query with security checks"""
-    #     _execute_query(self.conn,query,params)
-    
+# -------------------- Public function -------------------- #
 
     def table_schema(self,user, table_name: str) -> List[Dict[str, str]]:
         """Get schema information for a table"""
