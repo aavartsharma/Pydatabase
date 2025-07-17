@@ -1,5 +1,6 @@
 import sqlite3  # for database
 import logger
+import keyword
 from config import Config    # config.py
 from syslinkPy import Enum
 from datetime import datetime   # for datetime
@@ -39,8 +40,8 @@ class PyDatabase():
     def __init__(self):
         self.security = SecurityManager()
         self.db_path = Config.DATABASE_DIR / "base.db" 
-        self.conn = self._initialize_database()
-        self.cursor = None
+        self.conn, self.cursor = self._initialize_database()
+        # self.cursor = self.conn.cursor()
 
         #-------- lambda function --------#
 
@@ -67,9 +68,8 @@ class PyDatabase():
         # Create new database connection
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
-        
-
-        self._execute_query(conn,"""   
+        cursor = conn.cursor()
+        self._execute_query("""   
             CREATE TABLE IF NOT EXISTS query_log (
                 Sno INTEGER PRIMARY KEY AUTOINCREMENT,
                 Query TEXT,
@@ -77,9 +77,8 @@ class PyDatabase():
                 Client TEXT,
                 Status TEXT
             )
-        """)
-
-        self._execute_query(conn,"""
+        """,conn=conn,cursor=cursor)
+        self._execute_query("""
             CREATE TABLE IF NOT EXISTS client (
                 Id TEXT PRIMARY KEY,
                 Name TEXT,
@@ -89,19 +88,18 @@ class PyDatabase():
                 Owned_Tables TEXT,
                 File_Location TEXT
             )
-        """) 
+        """,conn=conn,cursor=cursor) 
 
-        self._execute_query(conn,"""
+        self._execute_query("""
             CREATE TABLE IF NOT EXISTS table_owner (
                 Table_Id TEXT PRIMARY KEY,
                 Table_Name TEXT,
                 Owner_Id TEXT,
                 Owner_name TEXT
             ) 
-        """)
+        """,conn=conn,cursor=cursor)
 
-
-        self._execute_query(conn,"""
+        self._execute_query("""
             CREATE TABLE IF NOT EXISTS client_log (
                 Log_Id TEXT PRIMARY KEY,
                 Client_Id TEXT,
@@ -109,44 +107,20 @@ class PyDatabase():
                 logged_In_At TEXT,
                 logged_Out_At TEXT
             )
-        """)
-        return conn
-
-    def _insert_query(self,user: str,table_name: str, **column) -> status:
+        """,conn=conn,cursor=cursor)
+        return conn , cursor
+    
+    def _execute_query(self,query: str, params: tuple | None = None,conn=None,cursor=None) -> Dict: # here is no sql injection security
         try:
-            query= f"""INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})"""
-            params= tuple(column[i] for i in column)
-            self._execute_query(user, query,parmas)
-            return status.success
-
-        except sqlite3.OperationalError as e:
-            loggin.warning(f"Schema of {table_name} is {self._table_schema(table_name)}")
-        except Exception as e:
-            logging.error(f"Failed to log Query: {e}")
-            raise e
-            return status.failed
-    
-    def _log_query(self, query: str, user: str, status: str = status.success) -> None:
-        """Log SQL query execution"""
-        try:
-            # print(_insert_query)
-            self._insert_query("query_log",Query=query,Timestamp=datetime.now().isoformat(" "),Client=user,Status = status)
-
-        except Exception as e:
-           logging.error(f"Failed to log query: {e}")
-           raise e
-    
-    def _execute_query(self, user: str,query: str, params: Optional[tuple] = None) -> Dict[str, Any]:
-        """Execute a SQL query with security checks"""
-        _execute_query_admin(self.conn,query,params)
-    
-    def _execute_query_admin(self,cursor,query: str, parmas: tuple | None = None) -> Dict: # here is no sql injection security
-        try: 
+            if not conn:
+                conn = self.conn
+            if not cursor:
+                cursor = self.cursor
             if params:
                 cursor.execute(query, params)
             else:
                 cursor.execute(query)
-            self.conn.commit()
+            conn.commit()
             columns = lambda descrp: [description[0] for description in descrp] if descrp else None
             results = [dict(zip(columns(cursor.description), row)) for row in cursor.fetchall()]
             return {
@@ -170,23 +144,45 @@ class PyDatabase():
            logging.error(f"Failed to log query: {e}")
            raise e
     
-    def _insert_query(self,user: str,table_name: str, **column) -> status:
+    def _insert_query(self,table_name: str, **column) -> status:
         """asdfasdfasdfasdfsafsadf"""
         try:
             query= f"""INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})"""
             params= tuple(column[i] for i in column)
-            self._execute_query(self.conn,query,params)
+            self._execute_query(query,params)
             return status.success
         except Exception as e:
             logging.error(f"Failed to log Query: {e}")
             raise e
             return status.failed
 
-    def _create_table():
-        pass
+    def _create_table(self, table_name: str, *columns: List[Column]):
+        query = f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            {', '.join(tuple(i.querystr() for i in columns))}
+        )
+        """
 
-    def _table_schema():
-        pass
+        try:
+            result = self._execute_query(query)
+            return result
+
+        except Exception as e:
+            logging.info(locals())
+            logging.error(f"Error occured: {e}")
+            raise e
+
+    def _table_schema(self,table_name:str):
+        rows = self._execute_query(f"PRAGMA table_info({table_name});")
+        return [
+            {
+                "name": row[1],
+                "type": row[2],
+                "notnull": bool(row[3]),
+                "pk": bool(row[5]),
+            }
+            for row in self.cursor.fetchall()
+        ]
 
     # def _insert_query(self,table_name: str, **column) -> status:
     #     """dsfsadfasfasdfasfdsaf"""
@@ -210,26 +206,17 @@ class PyDatabase():
 
     def table_schema(self, table_name: str) -> List[Dict[str, str]]:
         """Get schema information for a table"""
-        rows = self._execute_query(self.conn,f"PRAGMA table_info({table_name});")
-        logging.info(f"log: {rows}")
-        logging.info(f"cursor: {self.conn.cursor().fetchall()}")
-        # return self.conn.cursor().fetchall()
-        return [
-            {
-                "name": row[1],
-                "type": row[2],
-                "notnull": bool(row[3]),
-                "pk": bool(row[5]),
-            }
-            for row in self.conn.cursor().fetchall()
-        ]
+        self._table_schema(table_name)
 
     def insert(self,table_name: str, **column) -> status:
         try:
+            for i in column:
+                if keyword.iskeyword(i):
+                    raise ValueError(f"arg can't be a keyword , {i}")
             self._insert_query(table_name,**column)
 
         except sqlite3.OperationalError as e:
-            loggin.warning(f"Schema of {table_name} is {self._table_schema(table_name)}")
+            logging.warning(f"Schema of {table_name} is {self._table_schema(table_name)}")
         except Exception as e:
             logging.error(f"Failed to log Query: {e}")
             raise e
@@ -241,23 +228,12 @@ class PyDatabase():
         if table_name.isalnum():
             logging.warning("Table name must  not be alphanumeric")
             raise ValueError("Table name must not  alphanumeric")
+        for i in columns:
+            if keyword.iskeyword(i.name):
+                raise ValueError(f"arg can't be a keyword , {i.name}")
+        return self._create_table(table_name,*columns)
             
-        query = f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
-            {', '.join(tuple(i.querystr() for i in columns))}
-        )
-        """
-
-        try:
-            logging.info(query)
-            result = self._execute_query(user, query)
-            logging.info(result)
-            return result
-
-        except Exception as e:
-            logging.info(locals())
-            logging.error(f"Error occured: {e}")
-            raise e
+    
 
     def verify_token(self, client_token: str) -> bool:
         query = f"""select * from client where Id='{client_token}'"""
@@ -267,5 +243,6 @@ class PyDatabase():
                                  
 if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
-    db.create_table("test_table","Psudouser", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("class", "INTEGER"))
+    print(db.create_table("test_table2","Psudouser", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("classes", "INTEGER")))
     # db.in
+    print(db.insert("test_table2",name="aavart sharma",classes=3))
