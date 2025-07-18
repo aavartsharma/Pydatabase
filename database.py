@@ -1,5 +1,5 @@
-import sqlite3  # for database
 import logger
+import sqlite3  # for database
 import keyword
 from config import Config    # config.py
 from syslinkPy import Enum    # this is not any official libary in python
@@ -26,6 +26,31 @@ class Column:
     def querystr(self) -> str:
         return f'{self.name} {self.typeof} {"PRIMARY KEY" if self.isprimekey else ""} {"AUTOINCREMENT" if self.AUTOINCREMENT else ""}'
 
+class SQLstatement: # statetn("id = 3"),sta("call>4")
+    def __init__(self,cond: str):
+        self.cond = cond
+        pass
+
+    def __str__(self):
+        pass
+
+    def __call__(self,input):
+        """sql statement is converted to python stament and output is returned"""
+        pass
+
+    def __and__(self, other):
+        if( not isinstance(other, SQLstatement(cond))):
+            raise TypeError(f"Can't use and oprator with a {type(other)}")
+        return self.cond + " AND " + other.cond
+
+    def __or__(self, other):
+        pass
+        return false
+
+    def __invert__(self, other):
+        pass
+        return false
+    
 class StaticMethodMeta(type):
     def __new__(cls, name, bases, dct) -> type:
         new_dct = {}
@@ -41,10 +66,10 @@ class PyDatabase():
         self.security = SecurityManager()
         self.db_path = Config.DATABASE_DIR / "base.db" 
         self.conn, self.cursor = self._initialize_database()
-        # self.cursor = self.conn.cursor()
+        # self.cursor = self.conn.cursor()  self._delete("test", id >3 and name = aavart sharma or class = 3 or iq=230)
 
         #-------- Private lambda function --------#
-        self._delete = lambda table_name, **conditaion: _execute_query(f"DELETE FROM {table_name} WHERE {" AND ".join([f'{row}={conditaion[row]}' for row in conditaion])}")
+        self._delete = lambda table_name, **conditaion: _execute_query(f"DELETE FROM {table_name} WHERE {' AND '.join([f'{row}={conditaion[row]}' for row in conditaion])}")
         self._delete_all = lambda table_name: _execute_query(f"DELETE FROM {table_name}")
         self._drop_table = lambda table_name: _execute_query(f"DROP TABLE {table_name}")
         self._drop_all = lambda: _execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
@@ -187,7 +212,7 @@ class PyDatabase():
         #     for row in rows
         # ]
 
-    def _fetch_data(self,table_name: str):
+    def _fetch(self,table_name: str) -> List[Dict[str,any]]:
         result = self._execute_query(f"SELECT * from {table_name}")
         return result
 
@@ -245,8 +270,12 @@ class PyDatabase():
                                  
 if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
-    print(db.create_table("aavart","test_table2", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("classes", "INTEGER")))
+    # print(db.create_table("aavart","test_table2", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("classes", "INTEGER")))
     # db.in
     # print(db.insert("test_table2",name="aavart sharma",classes=3))
-    print(db._fetch_data("aavart","test_table2"))
-    print(db.table_schema("aavart","test_table2"))
+    # print(db._fetch("aavart","test_table2"))
+    # print(db.table_schema("aavart","test_table2"))
+
+    sta = statment("id>3")
+
+
