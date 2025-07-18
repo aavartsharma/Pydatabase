@@ -29,27 +29,31 @@ class Column:
 class SQLstatement: # statetn("id = 3"),sta("call>4")
     def __init__(self,cond: str):
         self.cond = cond
+        # print(cond)
         pass
 
     def __str__(self):
-        pass
+        return self.cond
 
     def __call__(self,input):
         """sql statement is converted to python stament and output is returned"""
         pass
 
     def __and__(self, other):
-        if( not isinstance(other, SQLstatement(cond))):
-            raise TypeError(f"Can't use and oprator with a {type(other)}")
-        return self.cond + " AND " + other.cond
+        if( not isinstance(other, SQLstatement)):
+            raise TypeError(f"Can't use AND oprator with a {type(other)}")
+        result = SQLstatement(self.cond + " AND " + other.cond)
+        return result
 
     def __or__(self, other):
-        pass
-        return false
+        if( not isinstance(other, SQLstatement)):
+            raise TypeError(f"Can't use OR oprator with a {type(other)}")
+        result = SQLstatement(self.cond + " OR " + other.cond)
+        return result
 
-    def __invert__(self, other):
-        pass
-        return false
+    def __invert__(self):
+        # if(not isinstance())
+        return SQLstatement("NOT " + self.cond)
     
 class StaticMethodMeta(type):
     def __new__(cls, name, bases, dct) -> type:
@@ -69,20 +73,10 @@ class PyDatabase():
         # self.cursor = self.conn.cursor()  self._delete("test", id >3 and name = aavart sharma or class = 3 or iq=230)
 
         #-------- Private lambda function --------#
-        self._delete = lambda table_name, **conditaion: _execute_query(f"DELETE FROM {table_name} WHERE {' AND '.join([f'{row}={conditaion[row]}' for row in conditaion])}")
+        self._delete = lambda table_name, conditaion: _execute_query(f"DELETE FROM {table_name} WHERE {str(conditation)}")
         self._delete_all = lambda table_name: _execute_query(f"DELETE FROM {table_name}")
         self._drop_table = lambda table_name: _execute_query(f"DROP TABLE {table_name}")
         self._drop_all = lambda: _execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
-
-
-    # def delete_table(self,tablename:str):
-    #     _execute_query(f"DELETE FROM {tablename}")
-
-    # def drop_table(self,tablename:str):
-    #     _execute_query(f"DROP TABLE {tablename}")
-
-    # def drop_all(self):
-    #     self.conn.cursor().execute("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
 
 # -------------------- Private functions -------------------- #
 
@@ -276,6 +270,18 @@ if (__name__ == "__main__"):  # for test componett of this file
     # print(db._fetch("aavart","test_table2"))
     # print(db.table_schema("aavart","test_table2"))
 
-    sta = statment("id>3")
+    sta1 = SQLstatement("id>3")
+    sta2 = SQLstatement("id=7")
+    sta3 = sta1 & sta2
+    sta4 = sta1 | sta3
+    sta5 = ~sta1
+    # print(sta1.cond + " AND " + sta2.cond)
+    print(sta3.cond)
+    print(str(sta3))
+    print(sta4.cond)
+    print(sta5.cond)
+    print((sta4 & sta5).cond)
+    fun1 = lambda t,c: f"DELETE FROM {t} WHERE {str(c)}"
+    print(fun1("aavart", sta4 | sta5))
 
 

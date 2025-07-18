@@ -3,6 +3,7 @@ import logger
 import sqlite3
 from config import Config
 from database import PyDatabase
+from database import SQLstatement
 from security import SecurityManager
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
@@ -22,24 +23,29 @@ class CreateTableRequest(BaseModel):
     table_name: str
     columns: Dict[str, str]
 
-@app.post("/query")
-async def execute_query(request: SQLQueryRequest,current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
-    """Execute a SQL query"""
-    try:
-        result = db.execute_query(
-            request.query,
-            tuple(request.params) if request.params else None,
-            user=current_user.get("sub", "anonymous")
-        )
-        return result
-    except sqlite3.Error as e:
-        raise HTTPException(status_code=400, detail=f"SQL error: {str(e)}")
-    except ValueError as e:
-        raise HTTPException(status_code=403, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.post("/query")
+# async def execute_query(request: SQLQueryRequest,current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
+#     """Execute a SQL query"""
+#     try:
+#         result = db.execute_query(
+#             request.query,
+#             tuple(request.params) if request.params else None,
+#             user=current_user.get("sub", "anonymous")
+#         )
+#         return result
+#     except sqlite3.Error as e:
+#         raise HTTPException(status_code=400, detail=f"SQL error: {str(e)}")
+#     except ValueError as e:
+#         raise HTTPException(status_code=403, detail=str(e))
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 # @app.post("/login") 
+
+@app.get("/table/fetch/{client_token}")
+async def fetch(client_token: str, ):
+    """fetch data from database"""
+    pass
 
 @app.post("/table/create/{client_token}")
 async def create_table(client_token:str ,request: CreateTableRequest, current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
@@ -47,9 +53,9 @@ async def create_table(client_token:str ,request: CreateTableRequest, current_us
     try:
         # db.
         result = db.create_table(
+            user_name,
             request.table_name,
-            request.columns,
-            user=current_user.get("sub", "anonymous")
+            request.columns
         )
         return result
     except ValueError as e:
@@ -61,7 +67,7 @@ async def create_table(client_token:str ,request: CreateTableRequest, current_us
 async def insert_data(client_token: str,request: CreateTableRequest):
     """sdfasfsflsfjslfjslfjlfjalfjlfjaslfjaslfjafljafl"""
     try:
-        result= db.insert()
+        result= db.insert(user_name, re)
     except Exception as e:
         raise HTTPException(status_code=333,detail=str(e))
 
@@ -85,6 +91,10 @@ async def client_login(name: str,token: str):
     db.execute_query("select * from users")
     pass
 
+@app.post("/table/options")
+async def options():
+    """sfdsfsf"""
+    return {"options": "under dev "}
 @app.get("/signup")
 async def client_signup(user: str, password):
     pass 
