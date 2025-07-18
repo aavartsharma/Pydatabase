@@ -206,18 +206,22 @@ class PyDatabase():
         #     for row in rows
         # ]
 
-    def _fetch(self,table_name: str) -> List[Dict[str,any]]:
-        result = self._execute_query(f"SELECT * from {table_name}")
-        return result
-
+    def _fetch(self,table_name: str, condition: SQLstatement = None) -> List[Dict[str,any]]:
+        if(not condition):
+            return self._execute_query(f"SELECT * from {table_name}")
+        return self._execute_query(f"SELECT * from {table_name} WHERE {str(condition)}")
+        
 # -------------------- Public function -------------------- #
 
-    def table_schema(self,user, table_name: str) -> List[Dict[str, str]]:
+    def fetch(self, user, table_name, condition: SQLstatement = None):
+        return _fetch(table_name, condition)
+
+    def table_schema(self, user, table_name: str) -> List[Dict[str, str]]:
         """Get schema information for a table"""
         logging.info(f"User query - user:{user}, queryed: {table_schema.__name__}")
         return self._table_schema(table_name)
 
-    def insert(self,user,table_name: str, **column) -> status:
+    def insert(self, user,table_name: str, **column) -> status:
         try:
             for i in column:
                 if keyword.iskeyword(i):
@@ -231,7 +235,7 @@ class PyDatabase():
             raise e
             return status.failed
     
-    def create_table(self,user: str, table_name: str, *columns: List[Column]) -> Dict[str, Any]:
+    def create_table(self, user: str, table_name: str, *columns: List[Column]) -> Dict[str, Any]:
         """Create a new table with specified columns"""
         # Validate table name (prevent SQL injection)
         if table_name.isalnum():
@@ -244,24 +248,22 @@ class PyDatabase():
         result["status"] = status.success
         return result
     
-    def delete():
-        pass
-    
-    def delete_all():
-        pass
+    def delete(user: str,table_name: str, condition: SQLstatement) -> Any:
+        if not condition:
+            return self._delete_all(table_name)
+        return self._delete(table_name, condition)
 
-    def drop_table():
-        pass
-
-    def drop_all():
-        pass
+    def drop_table(user: str, table_name: str= None):
+        if( not table_name):
+            return _drop_all()
+        return _drop_table(table_name)
 
     def verify_token(self, client_token: str) -> bool:
         query = f"""select * from client where Id='{client_token}'"""
         _execute_query("system",)
         pass
 
-                                 
+# -------------------- TEST AREA -------------------- #                               
 if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
     # print(db.create_table("aavart","test_table2", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("classes", "INTEGER")))

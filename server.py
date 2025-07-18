@@ -2,6 +2,7 @@
 import logger
 import sqlite3
 from config import Config
+from database import Column
 from database import PyDatabase
 from database import SQLstatement
 from security import SecurityManager
@@ -19,9 +20,14 @@ class SQLQueryRequest(BaseModel):
     query: str
     params: Optional[List[Any]] = None
 
+class SQLQuery(BaseModel):
+    table_name: str
+    cond: SQLstatement
+    pass
+
 class CreateTableRequest(BaseModel):
     table_name: str
-    columns: Dict[str, str]
+    columns: Dict[str,str]
 
 # @app.post("/query")
 # async def execute_query(request: SQLQueryRequest,current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
@@ -43,9 +49,12 @@ class CreateTableRequest(BaseModel):
 # @app.post("/login") 
 
 @app.get("/table/fetch/{client_token}")
-async def fetch(client_token: str, ):
+async def fetch(client_token: str, query: SQLQuery):
     """fetch data from database"""
-    pass
+    try: 
+        return db.fetch(user_name,query.table_name,query.cond)
+    except Exception as e:
+        print(e)
 
 @app.post("/table/create/{client_token}")
 async def create_table(client_token:str ,request: CreateTableRequest, current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
@@ -55,7 +64,7 @@ async def create_table(client_token:str ,request: CreateTableRequest, current_us
         result = db.create_table(
             user_name,
             request.table_name,
-            request.columns
+            *request.columns
         )
         return result
     except ValueError as e:
@@ -67,7 +76,7 @@ async def create_table(client_token:str ,request: CreateTableRequest, current_us
 async def insert_data(client_token: str,request: CreateTableRequest):
     """sdfasfsflsfjslfjslfjlfjalfjlfjaslfjaslfjafljafl"""
     try:
-        result= db.insert(user_name, re)
+        result= db.insert(user_name, request.table_name, **request.columns)
     except Exception as e:
         raise HTTPException(status_code=333,detail=str(e))
 
@@ -80,24 +89,26 @@ async def update(client_token:str):
 async def get_table_schema(client_token: str,_: Dict[str, Any] = Depends(SecurityManager.verify_token)):
     """Get schema information for a table"""
     try:
-        return {"schema": db.get_table_schema(table_name)}
+        return {"schema": db.table_schema(user_name,table_name)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/table/delete/{client_token}")
+async def delete(client_token: str, table_name: str, condition):
+    """delete table row in database"""
+    try: 
+        return db.delete(user_name,table_name,condition)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/programs/{name}")
-async def client_login(name: str,token: str):
-    # if name and token matched in database table
-    db.execute_query("select * from users")
-    pass
+@app.get("/table/drop/{client_token}")
+async def drop(client_token: str, table_name):
+    """drop itn eh table"""
 
 @app.post("/table/options")
 async def options():
     """sfdsfsf"""
     return {"options": "under dev "}
-@app.get("/signup")
-async def client_signup(user: str, password):
-    pass 
 
 @app.get("/test")
 async def test():
