@@ -2,14 +2,32 @@ import urllib3
 import requests
 import pandas as pd
 from config import Config
+from syslinkPy import Enum
 from typing import Any, Dict, List, Optional
 
 # Disable SSL verification warnings for self-signed certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+class method(Enum):
+    get: str = "GET"
+    put: str = "PUT"
+    post: str = "POST"
+
+class Column:
+    def __init__(self,name:str ,typeof:str, isprimekey: bool = False , AUTOINCREMENT = False):
+        if(not isprimekey and AUTOINCREMENT):
+            raise ValueError("autoincrement is only allowed for primarykey")
+        self.name = name
+        self.typeof = typeof.capitalize()
+        self.isprimekey = isprimekey
+        self.AUTOINCREMENT = AUTOINCREMENT
+    
+    def querystr(self) -> str:
+        return f'{self.name} {self.typeof} {"PRIMARY KEY" if self.isprimekey else ""} {"AUTOINCREMENT" if self.AUTOINCREMENT else ""}'
+
 class PyDatabaseClient:
     def __init__(self):
-        self.base_url = f"https://{Config.host}:{Config.port}" # should be from envirment variable
+        self.base_url = f"https://{Config.host}:{Config.port}" # should be accquied from envirment variable
         self.token: Optional[str] = None   # will be provide by sysllinkl
         
     def login(self, token: str) -> bool:
@@ -58,8 +76,16 @@ class PyDatabaseClient:
         )
         return response["updated_count"]
 
-    def create_table(self,table_name: str, columns: List[colums]):
-        pass
+    def create_table(self,table_name: str, *columns: List[colums]):
+        data = {
+            "table_name": table_name,
+            columes: {"name": "text","iq":"INTEGER"} 
+        }
+        response = self._make_request(
+            method.post,
+            f"table/create/{self.token}",
+            data
+        )
 
     def insert(self,table_name: str,**data : Dict[str:str | int | float]):
         pass
@@ -77,3 +103,9 @@ class PyDatabaseClient:
 
     def get_schema(self, table_name: str):
         passS
+
+if(__name__ == "__main__"):
+
+    print('hello world')
+    client = PyDatabaseClient()
+    print(client.create_table("client_testtable",Column("sno","INTEGER" , True, True)))

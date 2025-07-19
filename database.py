@@ -3,7 +3,8 @@ import sqlite3  # for database
 import keyword
 from config import Config    # config.py
 from syslinkPy import Enum    # this is not any official libary in python
-from datetime import datetime   # for datetime
+from datetime import datetime  
+from pydantic import BaseModel # for datetime
 from security import SecurityManager   # security.py
 from typing import Any, Dict, List, Optional, Union   # for type annotation
 
@@ -26,7 +27,7 @@ class Column:
     def querystr(self) -> str:
         return f'{self.name} {self.typeof} {"PRIMARY KEY" if self.isprimekey else ""} {"AUTOINCREMENT" if self.AUTOINCREMENT else ""}'
 
-class SQLstatement: # statetn("id = 3"),sta("call>4")
+class SQLstatement(BaseModel): # statetn("id = 3"),sta("call>4")
     def __init__(self,cond: str):
         self.cond = cond
         # print(cond)

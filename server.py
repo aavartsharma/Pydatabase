@@ -22,8 +22,7 @@ class SQLQueryRequest(BaseModel):
 
 class SQLQuery(BaseModel):
     table_name: str
-    cond: SQLstatement
-    pass
+    cond: Optional[SQLstatement] = None
 
 class CreateTableRequest(BaseModel):
     table_name: str
@@ -102,8 +101,12 @@ async def delete(client_token: str, table_name: str, condition):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/table/drop/{client_token}")
-async def drop(client_token: str, table_name):
+async def drop(client_token: str, table_name: str | None = None):
     """drop itn eh table"""
+    try: 
+        return db.drop_table(table_name)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/table/options")
 async def options():
