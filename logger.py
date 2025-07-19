@@ -24,7 +24,7 @@ class Utility:
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s',
             handlers=[
-                logging.FileHandler(f'logs/{self.basename(self.config.name)}.log'),
+                logging.FileHandler(f'logs/app.log'),
                 logging.StreamHandler(sys.stdout)
             ]
         )

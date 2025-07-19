@@ -4,20 +4,27 @@ formatters:
     format: "%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s"
 
 handlers:
+  console:
+    class: logging.StreamHandler
+    formatter: default
+    stream: ext://sys.stdout
   file:
     class: logging.FileHandler
     filename: logs/app.log
     formatter: default
 loggers:
-  uvicorns: 
-    handlers: [file]
+  uvicorn: 
+    handlers: [console, file]
     level: INFO
-  uvicorns.error:
-    handlers: [file]
+    propagate: False
+  uvicorn.error:
+    handlers: [console, file]
     level: INFO
-  uvicorns.access:
-    handlers: [file]
+    propagate: False
+  uvicorn.access:
+    handlers: [console, file]
     level: INFO
+    propagate: False
 root:
-  handlers: [file]
+  handlers: [console, file]
   level: INFO

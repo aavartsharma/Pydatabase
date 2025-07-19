@@ -56,15 +56,18 @@ async def fetch(client_token: str, query: SQLQuery):
         print(e)
 
 @app.post("/table/create/{client_token}")
-async def create_table(client_token:str ,request: CreateTableRequest, current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
+async def create_table(client_token:str ,request: CreateTableRequest):  #   current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)
     """Create a new table"""
     try:
         # db.
+        logging.info(request.columns)
+        logging.info(f"client_token is {client_token}")
         result = db.create_table(
-            user_name,
+            "testuser",
             request.table_name,
             *request.columns
         )
+        logging.info(f"result of create_table is {result}")
         return result
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

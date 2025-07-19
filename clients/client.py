@@ -1,7 +1,7 @@
 import urllib3
 import requests
 import pandas as pd
-from config import Config
+# from config import Config
 from syslinkPy import Enum
 from typing import Any, Dict, List, Optional
 
@@ -27,8 +27,8 @@ class Column:
 
 class PyDatabaseClient:
     def __init__(self):
-        self.base_url = f"https://{Config.host}:{Config.port}" # should be accquied from envirment variable
-        self.token: Optional[str] = None   # will be provide by sysllinkl
+        self.base_url = f"http://{"0.0.0.0"}:{5000}" # should be accquied from envirment variable
+        self.token: Optional[str] = "notgiven"   # will be provide by sysllinkl
         
     def login(self, token: str) -> bool:
         """Login to the database server"""
@@ -45,16 +45,16 @@ class PyDatabaseClient:
         except requests.RequestException:
             return False
     
-    def _make_request(self, method: str, endpoint: str, data: Optional[Dict[str, Any]] = None) -> Any:
+    def _make_request(self, method: str, endpoint: str, json: Optional[Dict[str, Any]] = None) -> Any:
         """Make an authenticated request to the server"""
-        if not self.token:
-            raise ValueError("Not authenticated. Call login() first")
+        # if not self.token:
+        #     raise ValueError("Not authenticated. Call login() first")
             
         headers = {"Authorization": f"Bearer {self.token}"}
         response = requests.request(
             method,
             f"{self.base_url}/{endpoint}",
-            json=data,
+            json=json,
             headers=headers,
             verify=False
         )
@@ -76,18 +76,28 @@ class PyDatabaseClient:
         )
         return response["updated_count"]
 
-    def create_table(self,table_name: str, *columns: List[colums]):
-        data = {
-            "table_name": table_name,
-            columes: {"name": "text","iq":"INTEGER"} 
-        }
-        response = self._make_request(
-            method.post,
-            f"table/create/{self.token}",
-            data
-        )
+    def create_table(self,table_name: str, *columns: List[Column]):
+        try:
+            # headers={
+            #     "Content-Type": "application/json",
+            #     "Authorization": "Bearer your-access-token" 
+            # }
 
-    def insert(self,table_name: str,**data : Dict[str:str | int | float]):
+            payload = {
+                "table_name": table_name,
+                "columns": [i.__dict__ for i in columns]
+            }
+
+            response = self._make_request(
+                method.post,
+                f"table/create/{self.token}",
+                json=payload
+            )
+        except Exception as e:
+            print(str(e))
+            # print(str(e.http_error_msg))
+
+    def insert(self,table_name: str,**data : Dict[str, str | int | float]):
         pass
     
     def delete(self, collection: str, query: Dict[str, Any]) -> int:
@@ -102,10 +112,17 @@ class PyDatabaseClient:
         pass
 
     def get_schema(self, table_name: str):
-        passS
+        pass
+
+    def test(self):
+        return self._make_request(method.get, "test")
 
 if(__name__ == "__main__"):
 
-    print('hello world')
-    client = PyDatabaseClient()
+    # print('hello world')
+    # client = PyDatabaseClient()
     print(client.create_table("client_testtable",Column("sno","INTEGER" , True, True)))
+    # print(client.test())
+    a = Column("sno","INTEGER" , True, True)
+    print(a.__dict__)
+
