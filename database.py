@@ -21,11 +21,11 @@ class Column:
             raise ValueError("autoincrement is only allowed for primarykey")
         self.name = name
         self.typeof = typeof.capitalize()
-        self.isprimekey = isprimekey
-        self.AUTOINCREMENT = AUTOINCREMENT
+        self.isprimekey = True if isprimekey=="True" or isprimekey==True else False
+        self.AUTOINCREMENT = True if AUTOINCREMENT=="True" or AUTOINCREMENT==True else False
     
     def querystr(self) -> str:
-        return f'{self.name} {self.typeof} {"PRIMARY KEY" if self.isprimekey else ""} {"AUTOINCREMENT" if self.AUTOINCREMENT else ""}'
+        return f'{self.name} {self.typeof} {"PRIMARY KEY" if self.isprimekey and self.isprimekey != str(self,isprimekry) else ""} {"AUTOINCREMENT" if self.AUTOINCREMENT else ""}'
 
 class SQLstatement(BaseModel): # statetn("id = 3"),sta("call>4")
     def __init__(self,cond: str):
@@ -187,12 +187,12 @@ class PyDatabase():
 
         try:
             result = self._execute_query(query)
-            return result
+            return result , query
 
         except Exception as e:
             logging.info(locals())
             logging.error(f"Error occured: {e}")
-            raise e
+            return e , query
 
     def _table_schema(self,table_name:str):
         rows = self._execute_query(f"PRAGMA table_info({table_name});")
@@ -242,7 +242,8 @@ class PyDatabase():
         for i in columns:
             if keyword.iskeyword(i.name):
                 raise ValueError(f"arg can't be a keyword , {i.name}")
-        result = self._create_table(table_name,*columns)
+        result, query = self._create_table(table_name,*columns)
+        logging.info(f"Create table's Query: {query}")
         result["status"] = status.success
         return result
     

@@ -64,6 +64,7 @@ async def create_table(client_token:str ,request: CreateTableRequest):  #   curr
         logging.info(request.columns)
         logging.info(f"client_token is {client_token}")
         columns = [Column(**i) for i in request.columns]
+        print(columns[0].__dict__)
         result = db.create_table(
             "testuser",
             request.table_name,

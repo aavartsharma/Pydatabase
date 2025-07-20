@@ -14,7 +14,7 @@ class method(Enum):
     post: str = "POST"
 
 class Column:
-    def __init__(self,name:str ,typeof:str, isprimekey: bool = False , AUTOINCREMENT = False):
+    def __init__(self,name:str ,typeof:str, isprimekey: bool = str(False) , AUTOINCREMENT = str(False)):
         if(not isprimekey and AUTOINCREMENT):
             raise ValueError("autoincrement is only allowed for primarykey")
         self.name = name
@@ -49,8 +49,10 @@ class PyDatabaseClient:
         """Make an authenticated request to the server"""
         # if not self.token:
         #     raise ValueError("Not authenticated. Call login() first")
-            
-        headers = {"Authorization": f"Bearer {self.token}"}
+        headers={
+            "accept": 'application/json',
+            "Content-Type": "application/json"
+        }
         response = requests.request(
             method,
             f"{self.base_url}/{endpoint}",
@@ -78,14 +80,11 @@ class PyDatabaseClient:
 
     def create_table(self,table_name: str, *columns: List[Column]):
         try:
-            # headers={
-            #     "Content-Type": "application/json",
-            #     "Authorization": "Bearer your-access-token" 
-            # }
-
+            listc = [i.__dict__ for i in columns]
+            print(listc)
             payload = {
                 "table_name": table_name,
-                "columns": str([i.__dict__ for i in columns])
+                "columns": listc
             }
 
             response = self._make_request(
@@ -123,7 +122,7 @@ if(__name__ == "__main__"):
 
     # print('hello world')
     client = PyDatabaseClient()
-    print(client.create_table("client_testtable",Column("sno","INTEGER" , True, True),Column("name", "TEXT"),Column("iq", "INTEGER")))
+    print(client.create_table("client_testtable",Column("name", "TEXT","False")))
     # print(client.test())
     a = Column("sno","INTEGER" , True, True)
     print(a.__dict__)
