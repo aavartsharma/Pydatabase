@@ -18,7 +18,7 @@ class Column:
         if(not isprimekey and AUTOINCREMENT):
             raise ValueError("autoincrement is only allowed for primarykey")
         self.name = name
-        self.typeof = typeof.capitalize()
+        self.typeof = typeof
         self.isprimekey = isprimekey
         self.AUTOINCREMENT = AUTOINCREMENT
     
@@ -27,7 +27,7 @@ class Column:
 
 class PyDatabaseClient:
     def __init__(self):
-        self.base_url = f"http://{"0.0.0.0"}:{5000}" # should be accquied from envirment variable
+        self.base_url = f"http://0.0.0.0:{5000}" # should be accquied from envirment variable
         self.token: Optional[str] = "notgiven"   # will be provide by sysllinkl
         
     def login(self, token: str) -> bool:
@@ -85,7 +85,7 @@ class PyDatabaseClient:
 
             payload = {
                 "table_name": table_name,
-                "columns": [i.__dict__ for i in columns]
+                "columns": str([i.__dict__ for i in columns])
             }
 
             response = self._make_request(
@@ -93,8 +93,10 @@ class PyDatabaseClient:
                 f"table/create/{self.token}",
                 json=payload
             )
+            return response
         except Exception as e:
-            print(str(e))
+            print(e)
+            return str(e)
             # print(str(e.http_error_msg))
 
     def insert(self,table_name: str,**data : Dict[str, str | int | float]):
@@ -120,8 +122,8 @@ class PyDatabaseClient:
 if(__name__ == "__main__"):
 
     # print('hello world')
-    # client = PyDatabaseClient()
-    print(client.create_table("client_testtable",Column("sno","INTEGER" , True, True)))
+    client = PyDatabaseClient()
+    print(client.create_table("client_testtable",Column("sno","INTEGER" , True, True),Column("name", "TEXT"),Column("iq", "INTEGER")))
     # print(client.test())
     a = Column("sno","INTEGER" , True, True)
     print(a.__dict__)

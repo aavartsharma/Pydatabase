@@ -22,7 +22,7 @@ class Utility:
         self.basename= lambda x: os.path.basename(x)
         logging.basicConfig(
             level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(lineno)d - %(message)s',
+            format='%(asctime)s - %(levelname)s - %(name)s - %(lineno)d - %(message)s',
             handlers=[
                 logging.FileHandler(f'logs/app.log'),
                 logging.StreamHandler(sys.stdout)

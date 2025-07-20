@@ -239,9 +239,6 @@ class PyDatabase():
     def create_table(self, user: str, table_name: str, *columns: List[Column]) -> Dict[str, Any]:
         """Create a new table with specified columns"""
         # Validate table name (prevent SQL injection)
-        if table_name.isalnum():
-            logging.warning("Table name must  not be alphanumeric")
-            raise ValueError("Table name must not  alphanumeric")
         for i in columns:
             if keyword.iskeyword(i.name):
                 raise ValueError(f"arg can't be a keyword , {i.name}")

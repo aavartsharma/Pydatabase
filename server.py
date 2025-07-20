@@ -1,6 +1,7 @@
 """provide a fast a api to my syslink modules to queay data in pydatabase"""
 import logger
 import sqlite3
+import traceback
 from config import Config
 from database import Column
 from database import PyDatabase
@@ -26,7 +27,7 @@ class SQLQuery(BaseModel):
 
 class CreateTableRequest(BaseModel):
     table_name: str
-    columns: Dict[str,str]
+    columns: List[Dict[str,str]]
 
 # @app.post("/query")
 # async def execute_query(request: SQLQueryRequest,current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
@@ -62,16 +63,21 @@ async def create_table(client_token:str ,request: CreateTableRequest):  #   curr
         # db.
         logging.info(request.columns)
         logging.info(f"client_token is {client_token}")
+        columns = [Column(**i) for i in request.columns]
         result = db.create_table(
             "testuser",
             request.table_name,
-            *request.columns
+            *columns
         )
         logging.info(f"result of create_table is {result}")
         return result
     except ValueError as e:
+        logging.error(f"Error : {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
+        logging.error(f"Error : {str(e)}")
+        raise e
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/table/insert/{client_token}")
