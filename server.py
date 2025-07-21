@@ -85,7 +85,8 @@ async def create_table(client_token:str ,request: CreateTableRequest):  #   curr
 async def insert_data(client_token: str,request: CreateTableRequest):
     """sdfasfsflsfjslfjslfjlfjalfjlfjaslfjaslfjafljafl"""
     try:
-        result= db.insert(user_name, request.table_name, **request.columns)
+        result= db.insert(client_token, request.table_name, **request.columns[0])
+        return result
     except Exception as e:
         raise HTTPException(status_code=333,detail=str(e))
 

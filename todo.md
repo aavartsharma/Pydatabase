@@ -3,4 +3,4 @@
 3.) encryped the every text on databse
 4.) better exception handling
 5.) add shutdown protocal
-6.) 
+6.) make js client working  

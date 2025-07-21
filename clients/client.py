@@ -1,7 +1,6 @@
 import urllib3
 import requests
 import pandas as pd
-# from config import Config
 from syslinkPy import Enum
 from typing import Any, Dict, List, Optional
 
@@ -64,10 +63,22 @@ class PyDatabaseClient:
         return response.json()
     
     def insert(self, collection: str, document: Dict[str, Any]) -> str:
-        """Insert a document into a collection"""
         response = self._make_request("POST", collection, document)
         return response["_id"]
     
+    def insert(self,table_name: str,**data : Dict[str, str]) -> str:
+        """Insert a document into a collection"""
+        payload={
+            "table_name": table_name,
+            "columns": [data]
+        }
+        print(data)
+
+        return self._make_request(
+            method.post, 
+            f"table/insert/{self.token}",
+            json=payload
+        )
     
     def update(self, collection: str, query: Dict[str, Any], update_data: Dict[str, Any]) -> int:
         """Update documents in a collection"""
@@ -77,6 +88,8 @@ class PyDatabaseClient:
             {"query": query, "update": update_data}
         )
         return response["updated_count"]
+
+    # def fetch(self,table_name:str,)
 
     def create_table(self,table_name: str, *columns: List[Column]):
         try:
@@ -98,8 +111,6 @@ class PyDatabaseClient:
             return str(e)
             # print(str(e.http_error_msg))
 
-    def insert(self,table_name: str,**data : Dict[str, str | int | float]):
-        pass
     
     def delete(self, collection: str, query: Dict[str, Any]) -> int:
         """Delete documents from a collection"""
@@ -122,8 +133,9 @@ if(__name__ == "__main__"):
 
     # print('hello world')
     client = PyDatabaseClient()
-    print(client.create_table("client_testtable",Column("name", "TEXT","False")))
+    # print(client.create_table("client_testtable",Column("name", "TEXT","False")))
     # print(client.test())
-    a = Column("sno","INTEGER" , True, True)
-    print(a.__dict__)
+    # a = Column("sno","INTEGER" , True, True)
+    # print(a.__dict__)
+    print(client.insert("client_testtable",name="aavart"))
 
