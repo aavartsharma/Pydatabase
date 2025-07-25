@@ -27,34 +27,56 @@ class Column:
     def querystr(self) -> str:
         return f'{self.name} {self.typeof} {"PRIMARY KEY" if self.isprimekey and self.isprimekey != str(self,isprimekry) else ""} {"AUTOINCREMENT" if self.AUTOINCREMENT else ""}'
 
-class SQLstatement(BaseModel): # statetn("id = 3"),sta("call>4")
-    def __init__(self,cond: str):
-        self.cond = cond
-        # print(cond)
-        pass
-
-    def __str__(self):
-        return self.cond
-
-    def __call__(self,input):
-        """sql statement is converted to python stament and output is returned"""
-        pass
+class SQLExpr:
+    def __init__(self, expr):
+        self.expr = expr
 
     def __and__(self, other):
-        if( not isinstance(other, SQLstatement)):
-            raise TypeError(f"Can't use AND oprator with a {type(other)}")
-        result = SQLstatement(self.cond + " AND " + other.cond)
-        return result
+        return SQLExpr(f"{self.expr} AND {other.expr}")
 
     def __or__(self, other):
-        if( not isinstance(other, SQLstatement)):
-            raise TypeError(f"Can't use OR oprator with a {type(other)}")
-        result = SQLstatement(self.cond + " OR " + other.cond)
-        return result
+        return SQLExpr(f"{self.expr} OR {other.expr}")
 
     def __invert__(self):
-        # if(not isinstance())
-        return SQLstatement("NOT " + self.cond)
+        return SQLExpr(f"NOT ({self.expr})")
+
+    def __str__(self):
+        return self.expr
+
+class Field:
+    def __init__(self, name):
+        self.name = name
+
+    def __eq__(self, other):
+        return SQLExpr(f"{self.name}={self.quote(other)}")
+
+    def __gt__(self, other):
+        return SQLExpr(f"{self.name}>{self.quote(other)}")
+
+    def __lt__(self, other):
+        return SQLExpr(f"{self.name}<{self.quote(other)}")
+
+    def __ge__(self, other):
+        return SQLExpr(f"{self.name}>={self.quote(other)}")
+
+    def __le__(self, other):
+        return SQLExpr(f"{self.name}<={self.quote(other)}")
+
+    def __ne__(self, other):
+        return SQLExpr(f"{self.name}!={self.quote(other)}")
+
+    def quote(self,value):
+        if isinstance(value, str):
+            return f"'{value}'"
+        return str(value)
+# if(__name__ == "__main__"):
+#     id = Field("id")
+#     call = Field("call")
+
+#     query = ((id == 3) & (call > 3))
+#     print(query)
+
+
     
 class StaticMethodMeta(type):
     def __new__(cls, name, bases, dct) -> type:
@@ -207,15 +229,16 @@ class PyDatabase():
         #     for row in rows
         # ]
 
-    def _fetch(self,table_name: str, condition: SQLstatement = None) -> List[Dict[str,any]]:
+    def _fetch(self,table_name: str, condition: SQLExpr = None) -> List[Dict[str,any]]:
         if(not condition):
             return self._execute_query(f"SELECT * from {table_name}")
+        logging.info(f"SELECT * from {table_name} WHERE {str(condition)}")
         return self._execute_query(f"SELECT * from {table_name} WHERE {str(condition)}")
         
 # -------------------- Public function -------------------- #
 
-    def fetch(self, user, table_name, condition: SQLstatement = None):
-        return _fetch(table_name, condition)
+    def fetch(self, user, table_name, condition: SQLExpr = None): # fsadfsd
+        return self._fetch(table_name, condition)
 
     def table_schema(self, user, table_name: str) -> List[Dict[str, str]]:
         """Get schema information for a table"""
@@ -247,7 +270,7 @@ class PyDatabase():
         result["status"] = status.success
         return result
     
-    def delete(user: str,table_name: str, condition: SQLstatement) -> Any:
+    def delete(user: str,table_name: str, condition: SQLExpr) -> Any:
         if not condition:
             return self._delete_all(table_name)
         return self._delete(table_name, condition)
@@ -265,24 +288,31 @@ class PyDatabase():
 # -------------------- TEST AREA -------------------- #                               
 if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
+
+    id = Field("id")
+    classes = Field("class")
+    print(SQLExpr("id>3 AND class=3"))
+    print((id==3) & (classes < 3))
+
     # print(db.create_table("aavart","test_table2", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("classes", "INTEGER")))
     # db.in
     # print(db.insert("test_table2",name="aavart sharma",classes=3))
-    # print(db._fetch("aavart","test_table2"))
+    # print(db._fetch("client_testtable"))
     # print(db.table_schema("aavart","test_table2"))
 
-    sta1 = SQLstatement("id>3")
-    sta2 = SQLstatement("id=7")
-    sta3 = sta1 & sta2
-    sta4 = sta1 | sta3
-    sta5 = ~sta1
-    # print(sta1.cond + " AND " + sta2.cond)
-    print(sta3.cond)
-    print(str(sta3))
-    print(sta4.cond)
-    print(sta5.cond)
-    print((sta4 & sta5).cond)
-    fun1 = lambda t,c: f"DELETE FROM {t} WHERE {str(c)}"
-    print(fun1("aavart", sta4 | sta5))
+    # sta1 = SQLExpr("id>3")
+    # sta2 = SQLExpr("id=7")
+    # sta3 = sta1 & sta2
+    # sta4 = sta1 | sta3
+    # sta5 = ~sta1
+    # # print(sta1.cond + " AND " + sta2.cond)
+    # print(sta3.cond)
+    # print(str(sta3))
+    # print(sta4.cond)
+    # print(sta5.cond)
+    # print((sta4 & sta5).cond)
+    # fun1 = lambda t,c: f"DELETE FROM {t} WHERE {str(c)}"
+    # print(fun1("aavart", sta4 | sta5))
+    pass
 
 

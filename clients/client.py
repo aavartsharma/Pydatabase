@@ -1,7 +1,8 @@
 import urllib3
 import requests
-import pandas as pd
+# import pandas as pd
 from syslinkPy import Enum
+from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 
 # Disable SSL verification warnings for self-signed certificates
@@ -11,6 +12,49 @@ class method(Enum):
     get: str = "GET"
     put: str = "PUT"
     post: str = "POST"
+
+class SQLExpr:
+    def __init__(self, expr):
+        self.expr = expr
+
+    def __and__(self, other):
+        return SQLExpr(f"{self.expr} AND {other.expr}")
+
+    def __or__(self, other):
+        return SQLExpr(f"{self.expr} OR {other.expr}")
+
+    def __invert__(self):
+        return SQLExpr(f"NOT ({self.expr})")
+
+    def __str__(self):
+        return str(self.expr)
+
+class Field:
+    def __init__(self, name):
+        self.name = name
+
+    def __eq__(self, other):
+        return SQLExpr(f"{self.name}={self.quote(other)}")
+
+    def __gt__(self, other):
+        return SQLExpr(f"{self.name}>{self.quote(other)}")
+
+    def __lt__(self, other):
+        return SQLExpr(f"{self.name}<{self.quote(other)}")
+
+    def __ge__(self, other):
+        return SQLExpr(f"{self.name}>={self.quote(other)}")
+
+    def __le__(self, other):
+        return SQLExpr(f"{self.name}<={self.quote(other)}")
+
+    def __ne__(self, other):
+        return SQLExpr(f"{self.name}!={self.quote(other)}")
+
+    def quote(self,value):
+        if isinstance(value, str):
+            return f"'{value}'"
+        return str(value)
 
 class Column:
     def __init__(self,name:str ,typeof:str, isprimekey: bool = str(False) , AUTOINCREMENT = str(False)):
@@ -52,6 +96,7 @@ class PyDatabaseClient:
             "accept": 'application/json',
             "Content-Type": "application/json"
         }
+        print(json)
         response = requests.request(
             method,
             f"{self.base_url}/{endpoint}",
@@ -62,9 +107,25 @@ class PyDatabaseClient:
         response.raise_for_status()
         return response.json()
     
-    def insert(self, collection: str, document: Dict[str, Any]) -> str:
-        response = self._make_request("POST", collection, document)
-        return response["_id"]
+    def create_table(self,table_name: str, *columns: List[Column]):
+        try:
+            listc = [i.__dict__ for i in columns]
+            print(listc)
+            payload = {
+                "table_name": table_name,
+                "columns": listc
+            }
+
+            response = self._make_request(
+                method.post,
+                f"table/create/{self.token}",
+                json=payload
+            )
+            return response
+        except Exception as e:
+            print(e)
+            return str(e)
+            # print(str(e.http_error_msg))
     
     def insert(self,table_name: str,**data : Dict[str, str]) -> str:
         """Insert a document into a collection"""
@@ -89,28 +150,21 @@ class PyDatabaseClient:
         )
         return response["updated_count"]
 
-    # def fetch(self,table_name:str,)
-
-    def create_table(self,table_name: str, *columns: List[Column]):
-        try:
-            listc = [i.__dict__ for i in columns]
-            print(listc)
+    def fetch(self,table_name:str,column: str = None):
+        try: 
             payload = {
                 "table_name": table_name,
-                "columns": listc
+                "conditions": column
             }
-
             response = self._make_request(
                 method.post,
-                f"table/create/{self.token}",
+                f"table/fetch/{self.token}",
                 json=payload
             )
             return response
         except Exception as e:
             print(e)
-            return str(e)
-            # print(str(e.http_error_msg))
-
+            return e
     
     def delete(self, collection: str, query: Dict[str, Any]) -> int:
         """Delete documents from a collection"""
@@ -137,5 +191,13 @@ if(__name__ == "__main__"):
     # print(client.test())
     # a = Column("sno","INTEGER" , True, True)
     # print(a.__dict__)
-    print(client.insert("client_testtable",name="aavart"))
+    # print(client.insert("client_testtable",name="harry"))
+    id = Field("id")
+    classes = Field("class")
+    name = Field("name")
+    query = (name == "aavart")
+
+    # sta2 = SQLExpr("id=7")
+    # onj = SQLExpr("name=aavart")
+    print(client.fetch("client_testtable"))
 

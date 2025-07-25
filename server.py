@@ -3,12 +3,10 @@ import logger
 import sqlite3
 import traceback
 from config import Config
-from database import Column
-from database import PyDatabase
-from database import SQLstatement
 from security import SecurityManager
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
+from database import Column, PyDatabase, SQLExpr, Field
 from fastapi import FastAPI, HTTPException, Depends, Request, Body
 # ... (previous imports and setup) ...
 
@@ -23,11 +21,15 @@ class SQLQueryRequest(BaseModel):
 
 class SQLQuery(BaseModel):
     table_name: str
-    cond: Optional[SQLstatement] = None
+    conditions: Optional[str] = None
 
 class CreateTableRequest(BaseModel):
     table_name: str
     columns: List[Dict[str,str]]
+
+class fetchRequest(BaseModel):
+    table_name: str
+
 
 # @app.post("/query")
 # async def execute_query(request: SQLQueryRequest,current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
@@ -48,13 +50,21 @@ class CreateTableRequest(BaseModel):
 
 # @app.post("/login") 
 
-@app.get("/table/fetch/{client_token}")
+@app.post("/table/fetch/{client_token}")
 async def fetch(client_token: str, query: SQLQuery):
     """fetch data from database"""
-    try: 
-        return db.fetch(user_name,query.table_name,query.cond)
+    try:
+        logging.info(query)
+        result =  db.fetch(
+            client_token,
+            query.table_name,
+            SQLExpr(query.conditions) if query.conditions else None
+        )
+        logging.info(f"result of the query is {result}")
+        return result
     except Exception as e:
-        print(e)
+        logging.error(f"Eror while fetching: {e}")
+        raise e
 
 @app.post("/table/create/{client_token}")
 async def create_table(client_token:str ,request: CreateTableRequest):  #   current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)
