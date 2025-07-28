@@ -96,10 +96,12 @@ class PyDatabase():
         # self.cursor = self.conn.cursor()  self._delete("test", id >3 and name = aavart sharma or class = 3 or iq=230)
 
         #-------- Private lambda function --------#
-        self._delete = lambda table_name, conditaion: _execute_query(f"DELETE FROM {table_name} WHERE {str(conditation)}")
-        self._delete_all = lambda table_name: _execute_query(f"DELETE FROM {table_name}")
-        self._drop_table = lambda table_name: _execute_query(f"DROP TABLE {table_name}")
-        self._drop_all = lambda: _execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
+        self._delete = lambda table_name, condition: self._execute_query(f"DELETE FROM {table_name} WHERE {str(condition)}")
+        self._delete_all = lambda table_name:self. _execute_query(f"DELETE FROM {table_name}")
+        self._drop_table = lambda table_name: self._execute_query(f"DROP TABLE {table_name}")
+        self._drop_all = lambda: self._execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";'
+FROM sqlite_master
+WHERE type = 'table' AND name NOT LIKE 'sqlite_%'""")
 
 # -------------------- Private functions -------------------- #
 
@@ -229,20 +231,22 @@ class PyDatabase():
         #     for row in rows
         # ]
 
-    def _fetch(self,table_name: str, condition: SQLExpr = None) -> List[Dict[str,any]]:
+    def _fetch(self,table_name: str, condition: SQLExpr = None, *columns:List[str]) -> List[Dict[str,any]]:
+        col = "*" if not columns else ",".join([i for i in columns]) 
+
         if(not condition):
-            return self._execute_query(f"SELECT * from {table_name}")
-        logging.info(f"SELECT * from {table_name} WHERE {str(condition)}")
-        return self._execute_query(f"SELECT * from {table_name} WHERE {str(condition)}")
+            return self._execute_query(f"SELECT {col} from {table_name}")
+        logging.info(f"SELECT {col} from {table_name} WHERE {str(condition)}")
+        return self._execute_query(f"SELECT {col} from {table_name} WHERE {str(condition)}")
         
 # -------------------- Public function -------------------- #
 
-    def fetch(self, user, table_name, condition: SQLExpr = None): # fsadfsd
-        return self._fetch(table_name, condition)
+    def fetch(self, user, table_name, condition: SQLExpr = None, *columns: List[str]): # fsadfsd
+        return self._fetch(table_name, condition,*columns)
 
     def table_schema(self, user, table_name: str) -> List[Dict[str, str]]:
         """Get schema information for a table"""
-        logging.info(f"User query - user:{user}, queryed: {table_schema.__name__}")
+        logging.info(f"User query - user:{user}, queryed: {self.table_schema.__name__}")
         return self._table_schema(table_name)
 
     def insert(self, user,table_name: str, **column) -> status:
@@ -270,19 +274,19 @@ class PyDatabase():
         result["status"] = status.success
         return result
     
-    def delete(user: str,table_name: str, condition: SQLExpr) -> Any:
+    def delete(self, user: str,table_name: str, condition: SQLExpr = None) -> Any:
         if not condition:
             return self._delete_all(table_name)
         return self._delete(table_name, condition)
 
-    def drop_table(user: str, table_name: str= None):
+    def drop_table(self, user: str, table_name: str= None):
         if( not table_name):
-            return _drop_all()
-        return _drop_table(table_name)
+            return self._drop_all()
+        return self._drop_table(table_name)
 
     def verify_token(self, client_token: str) -> bool:
         query = f"""select * from client where Id='{client_token}'"""
-        _execute_query("system",)
+        self._execute_query("system",)
         pass
 
 # -------------------- TEST AREA -------------------- #                               
@@ -290,9 +294,16 @@ if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
 
     id = Field("id")
+    status_field = Field("Status")
     classes = Field("class")
     print(SQLExpr("id>3 AND class=3"))
     print((id==3) & (classes < 3))
+
+    # print(db.delete("testuser", "query_log"))
+    # print(db.drop_table("testuser"))
+    # print(db.fetch("testuser", "table_owner",None, "Owner_name"))
+    # print(db.table_schema("testuser", "table_owner"))
+    # print(db.)
 
     # print(db.create_table("aavart","test_table2", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("classes", "INTEGER")))
     # db.in
