@@ -6,7 +6,7 @@ from syslinkPy import Enum    # this is not any official libary in python
 from datetime import datetime  
 from pydantic import BaseModel # for datetime
 from security import SecurityManager   # security.py
-from sqlmodel import Field, SQLModel, creaate_engine
+from sqlmodel import Field, Session, SQLModel, create_engine, select
 from typing import Any, Dict, List, Optional, Union   # for type annotation
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger #(__name__,Config.version,"Idon'tknow",Config.project_name)
@@ -22,82 +22,6 @@ class Hero(SQLModel, table=True):
     name: str
     secret_name: str
     age: int | None = None
-class Column:
-    def __init__(self, **kwargs):
-        self.name = kwargs["name"]
-        self.typeof = kwargs["typeof"].upper()
-        # Convert flags to bool
-        self.isprimekey = str(kwargs.get("isprimekey", False)) == "True"
-        self.AUTOINCREMENT = str(kwargs.get("AUTOINCREMENT", False)) == "True"
-        self.UNIQUE = str(kwargs.get("UNIQUE", False)) == "True"
-        self.NOTNULL = str(kwargs.get("NOTNULL", False)) == "True"
-
-    def __str__(self) -> str:
-        parts = [self.name, self.typeof]
-
-        if self.isprimekey:
-            parts.append("PRIMARY KEY")
-            if self.AUTOINCREMENT and self.typeof == "INTEGER":
-                parts.append("AUTOINCREMENT")
-
-        if self.UNIQUE:
-            parts.append("UNIQUE")
-
-        if self.NOTNULL:
-            parts.append("NOT NULL")
-
-        return " ".join(parts)
-
-class SQLExpr:
-    def __init__(self, expr):
-        self.expr = expr
-
-    def __and__(self, other):
-        return SQLExpr(f"{self.expr} AND {other.expr}")
-
-    def __or__(self, other):
-        return SQLExpr(f"{self.expr} OR {other.expr}")
-
-    def __invert__(self):
-        return SQLExpr(f"NOT ({self.expr})")
-
-    def __str__(self):
-        return self.expr
-
-class Field:
-    def __init__(self, name):
-        self.name = name
-
-    def __eq__(self, other):
-        return SQLExpr(f"{self.name}={self.quote(other)}")
-
-    def __gt__(self, other):
-        return SQLExpr(f"{self.name}>{self.quote(other)}")
-
-    def __lt__(self, other):
-        return SQLExpr(f"{self.name}<{self.quote(other)}")
-
-    def __ge__(self, other):
-        return SQLExpr(f"{self.name}>={self.quote(other)}")
-
-    def __le__(self, other):
-        return SQLExpr(f"{self.name}<={self.quote(other)}")
-
-    def __ne__(self, other):
-        return SQLExpr(f"{self.name}!={self.quote(other)}")
-
-    def quote(self,value):
-        if isinstance(value, str):
-            return f"'{value}'"
-        return str(value)
-# if(__name__ == "__main__"):
-#     id = Field("id")
-#     call = Field("call")
-
-#     query = ((id == 3) & (call > 3))
-#     print(query)
-
-
     
 class StaticMethodMeta(type):
     def __new__(cls, name, bases, dct) -> type:
@@ -109,18 +33,17 @@ class StaticMethodMeta(type):
         return super().__new__(cls,name, bases, new_dct)
 
 class PyDatabase():
-
+    # add singleton pattern 
     def __init__(self):
         self.security = SecurityManager()
-        self.db_path = Config.DATABASE_DIR / "base.db" 
-        self.conn, self.cursor = self._initialize_database()
+        self.engine = create_engine(f"sqlite:///{Config.DATABASE_MAIN}")
         # self.cursor = self.conn.cursor()  self._delete("test", id >3 and name = aavart sharma or class = 3 or iq=230)
 
         #-------- Private lambda function --------#
-        self._delete = lambda table_name, condition: self._execute_query(f"DELETE FROM {table_name} WHERE {str(condition)}")
-        self._delete_all = lambda table_name:self. _execute_query(f"DELETE FROM {table_name}")
-        self._drop_table = lambda table_name: self._execute_query(f"DROP TABLE {table_name}")
-        self._drop_all = lambda: self._execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";'
+        self._delete = lambda self, table_name, condition: self._execute_query(f"DELETE FROM {table_name} WHERE {str(condition)}")
+        self._delete_all = lambda self,table_name:self. _execute_query(f"DELETE FROM {table_name}")
+        self._drop_table = lambda self,table_name: self._execute_query(f"DROP TABLE {table_name}")
+        self._drop_all = lambda self: self._execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";'
 FROM sqlite_master
 WHERE type = 'table' AND name NOT LIKE 'sqlite_%'""")
 
@@ -132,6 +55,8 @@ WHERE type = 'table' AND name NOT LIKE 'sqlite_%'""")
         # Config.DATABASE_DIR.mkdir(exist_ok=True)
         Config.init()
         
+        SQLModel.metadata.create_all(self.engine)
+
         # Create new database connection
         conn = sqlite3.connect(str(self.db_path))
         conn.row_factory = sqlite3.Row
@@ -254,7 +179,6 @@ WHERE type = 'table' AND name NOT LIKE 'sqlite_%'""")
 
     def _fetch(self,table_name: str, condition: SQLExpr = None, *columns:List[str]) -> List[Dict[str,any]]:
         col = "*" if not columns else ",".join([i for i in columns]) 
-
         if(not condition):
             return self._execute_query(f"SELECT {col} from {table_name}")
         logging.info(f"SELECT {col} from {table_name} WHERE {str(condition)}")
@@ -314,11 +238,13 @@ WHERE type = 'table' AND name NOT LIKE 'sqlite_%'""")
 if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
 
-    id = Field("id")
-    status_field = Field("Status")
-    classes = Field("class")
-    print(SQLExpr("id>3 AND class=3"))
-    print((id==3) & (classes < 3))
+    # id = Field("id")
+    # status_field = Field("Status")
+    # classes = Field("class")
+    # print(SQLExpr("id>3 AND class=3"))
+    # print((id==3) & (classes < 3))
+
+    # print(Hero.__dict__)
 
     # print(db.delete("testuser", "query_log"))
     # print(db.drop_table("testuser"))
