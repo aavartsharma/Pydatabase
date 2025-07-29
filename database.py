@@ -6,6 +6,7 @@ from syslinkPy import Enum    # this is not any official libary in python
 from datetime import datetime  
 from pydantic import BaseModel # for datetime
 from security import SecurityManager   # security.py
+from sqlmodel import Field, SQLModel, creaate_engine
 from typing import Any, Dict, List, Optional, Union   # for type annotation
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger #(__name__,Config.version,"Idon'tknow",Config.project_name)
@@ -15,17 +16,38 @@ class status(Enum):
     success:str
     failed:str
 
+
+class Hero(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    secret_name: str
+    age: int | None = None
 class Column:
-    def __init__(self,name:str ,typeof:str, isprimekey: bool = False , AUTOINCREMENT = False):
-        if(not isprimekey and AUTOINCREMENT):
-            raise ValueError("autoincrement is only allowed for primarykey")
-        self.name = name
-        self.typeof = typeof.capitalize()
-        self.isprimekey = True if isprimekey=="True" or isprimekey==True else False
-        self.AUTOINCREMENT = True if AUTOINCREMENT=="True" or AUTOINCREMENT==True else False
-    
-    def querystr(self) -> str:
-        return f'{self.name} {self.typeof} {"PRIMARY KEY" if self.isprimekey and self.isprimekey != str(self,isprimekry) else ""} {"AUTOINCREMENT" if self.AUTOINCREMENT else ""}'
+    def __init__(self, **kwargs):
+        for
+        self.name = kwargs["name"]
+        self.typeof = kwargs["typeof"].upper()
+        # Convert flags to bool
+        self.isprimekey = str(kwargs.get("isprimekey", False)) == "True"
+        self.AUTOINCREMENT = str(kwargs.get("AUTOINCREMENT", False)) == "True"
+        self.UNIQUE = str(kwargs.get("UNIQUE", False)) == "True"
+        self.NOTNULL = str(kwargs.get("NOTNULL", False)) == "True"
+
+    def __str__(self) -> str:
+        parts = [self.name, self.typeof]
+
+        if self.isprimekey:
+            parts.append("PRIMARY KEY")
+            if self.AUTOINCREMENT and self.typeof == "INTEGER":
+                parts.append("AUTOINCREMENT")
+
+        if self.UNIQUE:
+            parts.append("UNIQUE")
+
+        if self.NOTNULL:
+            parts.append("NOT NULL")
+
+        return " ".join(parts)
 
 class SQLExpr:
     def __init__(self, expr):
