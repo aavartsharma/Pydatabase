@@ -105,7 +105,7 @@ async def update(client_token:str):
     """asdfdsfsdfsd"""
     pass
 
-@app.get("/table/schema/{client_token}")
+@app.post("/table/schema/{client_token}")
 async def get_table_schema(client_token: str,_: Dict[str, Any] = Depends(SecurityManager.verify_token)):
     """Get schema information for a table"""
     try:
@@ -113,12 +113,14 @@ async def get_table_schema(client_token: str,_: Dict[str, Any] = Depends(Securit
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/table/delete/{client_token}")
-async def delete(client_token: str, table_name: str, condition):
+@app.post("/table/delete/{client_token}")
+async def delete(client_token: str, request: SQLQuery):
     """delete table row in database"""
     try: 
-        return db.delete(user_name,table_name,condition)
+        logging.info(f"Delete endpoint variables: {locals()}")
+        return db.delete(client_token,request.table_name,request.conditions)
     except Exception as e:
+        logging.error(f"Error occurted delete endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/table/drop/{client_token}")

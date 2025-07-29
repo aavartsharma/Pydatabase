@@ -72,7 +72,11 @@ class PyDatabaseClient:
     def __init__(self):
         self.base_url = f"http://0.0.0.0:{5000}" # should be accquied from envirment variable
         self.token: Optional[str] = "notgiven"   # will be provide by sysllinkl
-        
+    
+    @classmethod
+    def define_obj():
+        pass
+
     def login(self, token: str) -> bool:
         """Login to the database server"""
         try:
@@ -166,10 +170,19 @@ class PyDatabaseClient:
             print(e)
             return e
     
-    def delete(self, collection: str, query: Dict[str, Any]) -> int:
+    def delete(self,table_name: str, columns: str = None) -> int:
         """Delete documents from a collection"""
-        response = self._make_request("POST", f"{collection}/delete", query)
-        return response["deleted_count"]
+        payload = {
+            "table_name": table_name,
+            "conditions": columns
+        }
+        print("colums: ", columns)
+        response = self._make_request(
+            method.post,
+            f"table/delete/{self.token}",
+            json=payload
+        )
+        return response
 
     def Drop_table(self,table_name:str):
         pass
@@ -178,6 +191,11 @@ class PyDatabaseClient:
         pass
 
     def get_schema(self, table_name: str):
+        payload = {}
+        response = self._make_request(
+            method.post,
+            f"table/schema/{self.token}",
+        )
         pass
 
     def test(self):
@@ -187,17 +205,20 @@ if(__name__ == "__main__"):
 
     # print('hello world')
     client = PyDatabaseClient()
+    print(client.delete("client_testtable"))
+    # print(Column.__dict__)
+    # print(PyDatabaseClient.__dict__)
     # print(client.create_table("client_testtable",Column("name", "TEXT","False")))
     # print(client.test())
     # a = Column("sno","INTEGER" , True, True)
     # print(a.__dict__)
     # print(client.insert("client_testtable",name="harry"))
-    id = Field("id")
-    classes = Field("class")
-    name = Field("name")
-    query = (name == "aavart")
+    # id = Field("id")
+    # classes = Field("class")
+    # name = Field("name")
+    # query = (name == "aavart")
 
-    # sta2 = SQLExpr("id=7")
-    # onj = SQLExpr("name=aavart")
-    print(client.fetch("client_testtable"))
+    # # sta2 = SQLExpr("id=7")
+    # # onj = SQLExpr("name=aavart")
+    # print(client.fetch("client_testtable"))
 

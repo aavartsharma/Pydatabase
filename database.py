@@ -96,10 +96,10 @@ class PyDatabase():
         # self.cursor = self.conn.cursor()  self._delete("test", id >3 and name = aavart sharma or class = 3 or iq=230)
 
         #-------- Private lambda function --------#
-        self._delete = lambda table_name, conditaion: _execute_query(f"DELETE FROM {table_name} WHERE {str(conditation)}")
-        self._delete_all = lambda table_name: _execute_query(f"DELETE FROM {table_name}")
-        self._drop_table = lambda table_name: _execute_query(f"DROP TABLE {table_name}")
-        self._drop_all = lambda: _execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
+        self._delete = lambda table_name, conditaion: self._execute_query(f"DELETE FROM {table_name} WHERE {str(conditation)}")
+        self._delete_all = lambda table_name: self._execute_query(f"DELETE FROM {table_name}")
+        self._drop_table = lambda table_name: self._execute_query(f"DROP TABLE {table_name}")
+        self._drop_all = lambda: self._execute_query("""SELECT 'DROP TABLE IF EXISTS "' || name || '";' FROM sqlite_master WHERE type='table' AND nam;w :e NOT LIKE 'sqlite_%';""")
 
 # -------------------- Private functions -------------------- #
 
@@ -270,12 +270,12 @@ class PyDatabase():
         result["status"] = status.success
         return result
     
-    def delete(user: str,table_name: str, condition: SQLExpr) -> Any:
+    def delete(self, user: str,table_name: str, condition: SQLExpr) -> Any:
         if not condition:
             return self._delete_all(table_name)
         return self._delete(table_name, condition)
 
-    def drop_table(user: str, table_name: str= None):
+    def drop_table(self, user: str, table_name: str= None):
         if( not table_name):
             return _drop_all()
         return _drop_table(table_name)
