@@ -6,12 +6,14 @@ from syslinkPy import Enum    # this is not any official libary in python
 from datetime import datetime  
 from pydantic import BaseModel # for datetime
 from security import SecurityManager   # security.py
-from sqlmodel import Field, Session, SQLModel, create_engine, select
-from typing import Any, Dict, List, Optional, Union   # for type annotation
+from sqlmodel import Field as field, Session, SQLModel, create_engine, select
+from sqlalchemy.schema import CreateTable
+from sqlalchmey import inspect, Select
+from typing import Any, Dict, List, Optional, Union, TypeVar   # for type annotation
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger #(__name__,Config.version,"Idon'tknow",Config.project_name)
 # print(__file__)
-
+T = TypeVar("T")
 class status(Enum):
     success:str
     failed:str
@@ -32,7 +34,7 @@ class StaticMethodMeta(type):
             new_dct[key] = value
         return super().__new__(cls,name, bases, new_dct)
 
-class PyDatabase():
+class PyDatabase_client():
     # add singleton pattern 
     def __init__(self):
         self.security = SecurityManager()
@@ -234,43 +236,88 @@ WHERE type = 'table' AND name NOT LIKE 'sqlite_%'""")
         self._execute_query("system",)
         pass
 
+class Pydatabase():
+    def __init__(self):
+        self.security = SecurityManager()
+        self.engine = create_engine(f"sqlite:///{Config.DATABASE_MAIN}")
+
+    def _initialize_database(self):
+        Config.init()
+        class query_log(SQLModel, table=True):
+            pass
+
+        class client(SQLModel, table=True):
+            pass
+
+        class table_owner(SQLModel, table=True): pass
+
+        class client_log(SQLModel, table=True): pass
+
+        # query_log
+        # client
+        # table_owner
+        # client_log
+
+        SQLModel.metadata.create_all(self.engine)
+        
+        return None
+    
+    def _log_query(self, query: str, user: str, status: str = status.success) -> None:
+        """Log SQL query execution"""
+        try:
+            # print(_insert_query)
+            self._insert_query("aavart",table_name="query_log",Query=query,Timestamp=datetime.now().isoformat(" "),Client=user,Status = status)
+
+        except Exception as e:
+           logging.error(f"Failed to log query: {e}")
+           raise e
+
+    def fetch(self, table_name: str, statement: Select , ) -> List[Dict[str,any]]:
+        with Session(engine) as session:
+            persons = session.exec(statement).all()
+            return persons
+
+    def table_schema(self, table_name: str):
+        return self.inspector.get_columns(table_name)
+
+    def insert(self, cliebt_name: str, rows: List[T]) -> Status:
+        with Session(self.engine) as session:
+            for i in rows:
+                session.add(i)
+            session.commit()
+            for i in rows:
+                session.refreash(i)
+            pass
+
+    def create_table(self, table_class):  # maek a system later
+        with Session(self.engine) as session:
+            pass
+
+    def delete(self, ):
+        with Session(self.engine) as session:
+            statement = delete().where(Person.age < 20)
+            session.exec(statement)
+            session.commit()
+        pass
+
+    def delete_all(self):
+        pass
+
+    def drop_table(self):
+        pass
+
+    def drop_table_all(self):
+        pass
+
+    def verify_token(self):
+        pass
+    pass
+
 # -------------------- TEST AREA -------------------- #                               
 if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
 
-    # id = Field("id")
-    # status_field = Field("Status")
-    # classes = Field("class")
-    # print(SQLExpr("id>3 AND class=3"))
-    # print((id==3) & (classes < 3))
-
-    # print(Hero.__dict__)
-
-    # print(db.delete("testuser", "query_log"))
-    # print(db.drop_table("testuser"))
-    # print(db.fetch("testuser", "table_owner",None, "Owner_name"))
-    # print(db.table_schema("testuser", "table_owner"))
-    # print(db.)
-
-    # print(db.create_table("aavart","test_table2", Column("Sno", "INTEGER", True,True),Column("name", "TEXT"), Column("classes", "INTEGER")))
-    # db.in
-    # print(db.insert("test_table2",name="aavart sharma",classes=3))
-    # print(db._fetch("client_testtable"))
-    # print(db.table_schema("aavart","test_table2"))
-
-    # sta1 = SQLExpr("id>3")
-    # sta2 = SQLExpr("id=7")
-    # sta3 = sta1 & sta2
-    # sta4 = sta1 | sta3
-    # sta5 = ~sta1
-    # # print(sta1.cond + " AND " + sta2.cond)
-    # print(sta3.cond)
-    # print(str(sta3))
-    # print(sta4.cond)
-    # print(sta5.cond)
-    # print((sta4 & sta5).cond)
-    # fun1 = lambda t,c: f"DELETE FROM {t} WHERE {str(c)}"
-    # print(fun1("aavart", sta4 | sta5))
+    
     pass
 
 

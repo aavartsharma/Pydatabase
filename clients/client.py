@@ -13,61 +13,6 @@ class method(Enum):
     put: str = "PUT"
     post: str = "POST"
 
-class SQLExpr:
-    def __init__(self, expr):
-        self.expr = expr
-
-    def __and__(self, other):
-        return SQLExpr(f"{self.expr} AND {other.expr}")
-
-    def __or__(self, other):
-        return SQLExpr(f"{self.expr} OR {other.expr}")
-
-    def __invert__(self):
-        return SQLExpr(f"NOT ({self.expr})")
-
-    def __str__(self):
-        return str(self.expr)
-
-class Field:
-    def __init__(self, name):
-        self.name = name
-
-    def __eq__(self, other):
-        return SQLExpr(f"{self.name}={self.quote(other)}")
-
-    def __gt__(self, other):
-        return SQLExpr(f"{self.name}>{self.quote(other)}")
-
-    def __lt__(self, other):
-        return SQLExpr(f"{self.name}<{self.quote(other)}")
-
-    def __ge__(self, other):
-        return SQLExpr(f"{self.name}>={self.quote(other)}")
-
-    def __le__(self, other):
-        return SQLExpr(f"{self.name}<={self.quote(other)}")
-
-    def __ne__(self, other):
-        return SQLExpr(f"{self.name}!={self.quote(other)}")
-
-    def quote(self,value):
-        if isinstance(value, str):
-            return f"'{value}'"
-        return str(value)
-
-class Column:
-    def __init__(self,name:str ,typeof:str, isprimekey: bool = str(False) , AUTOINCREMENT = str(False)):
-        if(not isprimekey and AUTOINCREMENT):
-            raise ValueError("autoincrement is only allowed for primarykey")
-        self.name = name
-        self.typeof = typeof
-        self.isprimekey = isprimekey
-        self.AUTOINCREMENT = AUTOINCREMENT
-    
-    def querystr(self) -> str:
-        return f'{self.name} {self.typeof} {"PRIMARY KEY" if self.isprimekey else ""} {"AUTOINCREMENT" if self.AUTOINCREMENT else ""}'
-
 class PyDatabaseClient:
     def __init__(self):
         self.base_url = f"http://0.0.0.0:{5000}" # should be accquied from envirment variable
@@ -205,6 +150,8 @@ if(__name__ == "__main__"):
 
     # print('hello world')
     client = PyDatabaseClient()
+    class book():
+        id: Optional[int] = Field(default=None,primary_key=True)
     print(client.delete("client_testtable"))
     # print(Column.__dict__)
     # print(PyDatabaseClient.__dict__)
