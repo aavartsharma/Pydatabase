@@ -35,7 +35,7 @@ class StaticMethodMeta(type):
         return super().__new__(cls,name, bases, new_dct)
 
 
-class Pydatabase():
+class PyDatabase():
     def __init__(self):
         self.security = SecurityManager()
         self.engine = create_engine(f"sqlite:///{Config.DATABASE_MAIN}",echo=True)

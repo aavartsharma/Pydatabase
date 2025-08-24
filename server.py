@@ -3,10 +3,10 @@ import logger
 import sqlite3
 import traceback
 from config import Config
+from database import PyDatabase
 from security import SecurityManager
 from pydantic import BaseModel, Field
-from typing import Dict, Any, List, Optional, TypeVar 
-from database import PyDatabase
+from typing import Dict, Any, List, Optional 
 from fastapi import FastAPI, HTTPException, Depends, Request, Body
 # ... (previous imports and setup) ...
 
@@ -18,7 +18,7 @@ db = PyDatabase()
 
 class SQLQueryRequest(BaseModel):
     query: str
-    params: Optional[List[T]] = None
+    params: Optional[List[Any]] = None
 
 class SQLQuery(BaseModel):
     table_name: str
@@ -47,8 +47,40 @@ async def fetch(client_token: str, query: SQLQuery):
         logging.error(f"Eror while fetching: {e}")
         raise e
 
+# @app.post("/login")
+# async def login(request: LoginRequest):
+#     """Login endpoint with security logging"""
+#     try:
+#         # Log login attempt
+#         api_logger.log_security({
+#             "event_type": "LOGIN_ATTEMPT",
+#             "details": f"Login attempt for user: {request.username}",
+#             "ip_address": request.client.host
+#         }, request.username)
+
+#         token = SecurityManager.create_token(request.username)
+
+#         # Log successful login
+#         api_logger.log_security({
+#             "event_type": "LOGIN_SUCCESS",
+#             "details": f"Successful login for user: {request.username}",
+#             "ip_address": request.client.host
+#         }, request.username)
+
+#         return {"token": token}
+
+#     except Exception as e:
+#         # Log login failure
+#         api_logger.log_security({
+#             "event_type": "LOGIN_FAILURE",
+#             "details": f"Failed login for user: {request.username}. Error: {str(e)}",
+#             "ip_address": request.client.host
+#         }, request.username)
+
+#         raise HTTPException(status_code=401, detail="Authentication failed")
+
 @app.post("/table/create/{client_token}")
-async def create_table(client_token:str ,request: CreateTableRequest):  #   current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)
+async def create_table(client_token:str ,request: SQLQueryRequest):  #   current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)
     """Create a new table"""
     try:
         # db.
@@ -73,8 +105,7 @@ async def create_table(client_token:str ,request: CreateTableRequest):  #   curr
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/table/insert/{client_token}")
-async def insert_data(client_token: str,request: CreateTableRequest):
-    """sdfasfsflsfjslfjslfjlfjalfjlfjaslfjaslfjafljafl"""
+async def insert_data(client_token: str,request: SQLQueryRequest):
     try:
         result= db.insert(client_token, request.table_name, **request.columns[0])
         return result
@@ -104,7 +135,7 @@ async def delete(client_token: str, request: SQLQuery):
         logging.error(f"Error occurted delete endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/table/drop/{client_token}")
+@app.post("/table/drop/{client_token}")
 async def drop(client_token: str, table_name: str | None = None):
     """drop itn eh table"""
     try: 
