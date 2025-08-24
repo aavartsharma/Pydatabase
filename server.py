@@ -5,8 +5,8 @@ import traceback
 from config import Config
 from security import SecurityManager
 from pydantic import BaseModel, Field
-from typing import Dict, Any, List, Optional
-from database import Column, PyDatabase, SQLExpr, Field
+from typing import Dict, Any, List, Optional, TypeVar 
+from database import PyDatabase
 from fastapi import FastAPI, HTTPException, Depends, Request, Body
 # ... (previous imports and setup) ...
 
@@ -14,41 +14,22 @@ logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow"
 
 app = FastAPI()
 db = PyDatabase()
+# T = TypeVar("T")
 
 class SQLQueryRequest(BaseModel):
     query: str
-    params: Optional[List[Any]] = None
+    params: Optional[List[T]] = None
 
 class SQLQuery(BaseModel):
     table_name: str
     conditions: Optional[str] = None
 
-class CreateTableRequest(BaseModel):
-    table_name: str
-    columns: List[Dict[str,str]]
+# class CreateTableRequest[T](BaseModel):
+#     table_name: str
+#     columns: List[Dict[str,str]]
 
-class fetchRequest(BaseModel):
-    table_name: str
-
-
-# @app.post("/query")
-# async def execute_query(request: SQLQueryRequest,current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)):
-#     """Execute a SQL query"""
-#     try:
-#         result = db.execute_query(
-#             request.query,
-#             tuple(request.params) if request.params else None,
-#             user=current_user.get("sub", "anonymous")
-#         )
-#         return result
-#     except sqlite3.Error as e:
-#         raise HTTPException(status_code=400, detail=f"SQL error: {str(e)}")
-#     except ValueError as e:
-#         raise HTTPException(status_code=403, detail=str(e))
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/login") 
+# class fetchRequest(BaseModel):
+#     table_name: str 
 
 @app.post("/table/fetch/{client_token}")
 async def fetch(client_token: str, query: SQLQuery):

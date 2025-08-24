@@ -6,10 +6,10 @@ from syslinkPy import Enum    # this is not any official libary in python
 from datetime import datetime  
 from pydantic import BaseModel # for datetime
 from security import SecurityManager   # security.py
-from sqlmodel import Field as field, Session, SQLModel, create_engine, select
 from sqlalchemy.schema import CreateTable
 from sqlalchemy import inspect, Select,text
 from typing import Any, Dict, List, Optional, Union, TypeVar   # for type annotation
+from sqlmodel import Field as field, Session, SQLModel, create_engine, select, update
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger #(__name__,Config.version,"Idon'tknow",Config.project_name)
 # print(__file__)
@@ -105,35 +105,41 @@ class Pydatabase():
                 session.add(i)
             session.commit()
             pass
+    
+    def update(self,table_name, condition, updates):
+        statment = update(table_class).where(condition).values(**updates)
+        session.exec(statement)
+        session.commit()
 
-    def create_table(self, table_class):  # maek a system later
-        with Session(self.engine) as session:
-            pass
+    def create_table(self):  # maek a system later
+        SQLModel.metadata.create_all(self.engine)
 
-    def delete(self, ):
+    def delete(self, table_class, condition):
         with Session(self.engine) as session:
-            statement = delete().where(Person.age < 20)
+            statement = delete(table_class).where(condition)
             session.exec(statement)
             session.commit()
         pass
 
     def alter_table(self):
-        with engine.connect() as conn:
+        with self.engine.connect() as conn:
             conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR"))
             conn.commit()
 
     def delete_all(self):
-        pass
+        with Session(self.engine) as session:
+            statement = delete(table_class)
+            session.exec(statement)
+            session.commit()
 
-    def drop_table(self):
-        pass
+    def drop_table(self,table_class: T):
+        table_class.__table__.drop(self.engine)
 
     def drop_table_all(self):
-        pass
+        SQLModel. metadata.drop_all(self.engine)
 
     def verify_token(self):
         pass
-    pass
 
 # -------------------- TEST AREA -------------------- #                               
 if (__name__ == "__main__"):  # for test componett of this file
