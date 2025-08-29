@@ -5,8 +5,6 @@ from config import Config
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger
 
-
-
 def get_local_ip():
     # Use UDP socket to get your LAN IP
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

@@ -1,10 +1,10 @@
 import logger
-import sqlite3  # for database
+import sqlite3 
 import keyword
 from config import Config    # config.py
 from syslinkPy import Enum    # this is not any official libary in python
 from datetime import datetime  
-from pydantic import BaseModel # for datetime
+from pydantic import BaseModel, create_model
 from security import SecurityManager   # security.py
 from sqlalchemy.schema import CreateTable
 from sqlalchemy import inspect, Select,text
@@ -91,7 +91,7 @@ class PyDatabase():
            logging.error(f"Failed to log query: {e}")
            raise e
 
-    def fetch(self, table_name: str, statement: Select , ) -> List[Dict[str,any]]:
+    def fetch(self, table_name: str, statement: Select) -> List[Dict[str,any]]:
         with Session(engine) as session:
             persons = session.exec(statement).all()
             return persons
@@ -111,7 +111,24 @@ class PyDatabase():
         session.exec(statement)
         session.commit()
 
-    def create_table(self):  # maek a system later
+    def create_table(self,table_name, **attrbuies):  # maek a system later
+        # test1 = create_model(
+        #     "test1",
+        #     __base__=SQLModel,
+        #     __tablename__='test1',
+        #     __cls_kwargs__={"table": True},
+        #     id=(Optional[int], field(default=None, primary_key=True)),
+        #     name=(str, field()),
+        #     dmg=(int, field())
+        # )
+        # classname:type
+        classname = create_model(
+            table_name,
+            __base__=SQLModel,
+            __tablename__=table_name,
+            __cls_kwargs__={"table":True},
+            **attrbuies
+        )
         SQLModel.metadata.create_all(self.engine)
 
     def delete(self, table_class, condition):
@@ -136,23 +153,30 @@ class PyDatabase():
         table_class.__table__.drop(self.engine)
 
     def drop_table_all(self):
-        SQLModel. metadata.drop_all(self.engine)
+        SQLModel.metadata.drop_all(self.engine)
 
     def verify_token(self):
         pass
 
 # -------------------- TEST AREA -------------------- #                               
 if (__name__ == "__main__"):  # for test componett of this file
-    db= Pydatabase()
+    db= PyDatabase()
 
-    class test(SQLModel, table=True):
-        id: Optional[int] = field(primary_key=True)
-        name: str
+    # class test(SQLModel, table=True):
+    #     id: Optional[int] = field(primary_key=True)
+    #     name: str
 
-    SQLModel.metadata.create_all(db.engine)
-    rows = [test(id=1,name="aavar"), test(id=2,name="asf")]
-    db.insert("sfsfsf", rows)
+    # SQLModel.metadata.create_all(db.engine)
+    # rows = [test(id=1,name="aavar"), test(id=2,name="asf")]
+    # db.insert("sfsfsf", rows)
     # db.insert("agsag", )
+    db.create_table("gun", 
+        id=(Optional[int],field(default=None,primary_key=True)),
+        name=(str,field()),
+        classs=(str,field())
+    )
+
+    
     pass
 
 

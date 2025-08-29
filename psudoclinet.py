@@ -7,7 +7,7 @@ class hero(Somebaseclass):
 
 send_table([hero])
 
-list = [hero(name="aavart"),hero("name="sdfsdf")]
+lists = [hero(name="aavart"),hero(name="sdfsdf")]
 
 
 

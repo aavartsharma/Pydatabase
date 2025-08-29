@@ -17,12 +17,14 @@ db = PyDatabase()
 # T = TypeVar("T")
 
 class SQLQueryRequest(BaseModel):
-    query: str
+    clint_name: str
+    table_name: str
+    query: Optional[str] = None
     params: Optional[List[Any]] = None
 
-class SQLQuery(BaseModel):
-    table_name: str
-    conditions: Optional[str] = None
+# class SQLQuery(BaseModel):
+#     table_name: str
+#     conditions: Optional[str] = None
 
 # class CreateTableRequest[T](BaseModel):
 #     table_name: str
@@ -32,7 +34,7 @@ class SQLQuery(BaseModel):
 #     table_name: str 
 
 @app.post("/table/fetch/{client_token}")
-async def fetch(client_token: str, query: SQLQuery):
+async def fetch(client_token: str, query: SQLQueryRequest):
     """fetch data from database"""
     try:
         logging.info(query)
@@ -84,10 +86,9 @@ async def create_table(client_token:str ,request: SQLQueryRequest):  #   current
     """Create a new table"""
     try:
         # db.
-        logging.info(request.columns)
+        logging.info(request.query)
         logging.info(f"client_token is {client_token}")
-        columns = [Column(**i) for i in request.columns]
-        print(columns[0].__dict__)
+        
         result = db.create_table(
             "testuser",
             request.table_name,
@@ -126,7 +127,7 @@ async def get_table_schema(client_token: str,_: Dict[str, Any] = Depends(Securit
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/table/delete/{client_token}")
-async def delete(client_token: str, request: SQLQuery):
+async def delete(client_token: str, request: SQLQueryRequest):
     """delete table row in database"""
     try: 
         logging.info(f"Delete endpoint variables: {locals()}")

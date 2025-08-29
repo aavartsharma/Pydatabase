@@ -1,9 +1,19 @@
 import urllib3
 import requests
 # import pandas as pd
+import inspect
 from syslinkPy import Enum
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
+from pydantic import Field, BaseModel
+import json
+
+
+
+# make a class with ispect
+
+
+
 
 # Disable SSL verification warnings for self-signed certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -56,15 +66,21 @@ class PyDatabaseClient:
         response.raise_for_status()
         return response.json()
     
-    def create_table(self,table_name: str, *columns: List[Column]):
+    def create_table(self,table_name:str, *columns: List[type]):
+        """clint_name: str
+    table_name: str
+    query: Optional[str] = None
+    params: Optional[List[Any]] = None"""
         try:
-            listc = [i.__dict__ for i in columns]
+            listc = [json.dumps({j:book.__dict__[j] for j in book.__dict__ if isinstance(i.__dict__[j],dict)}) for i in columns]
             print(listc)
             payload = {
+                "name": "test_dummy2",
                 "table_name": table_name,
+                "query": None,
                 "columns": listc
             }
-
+            print(payload)
             response = self._make_request(
                 method.post,
                 f"table/create/{self.token}",
@@ -73,6 +89,7 @@ class PyDatabaseClient:
             return response
         except Exception as e:
             print(e)
+            raise e
             return str(e)
             # print(str(e.http_error_msg))
     
@@ -150,9 +167,17 @@ if(__name__ == "__main__"):
 
     # print('hello world')
     client = PyDatabaseClient()
+    def f(**k):
+        return k
     class book():
-        id: Optional[int] = Field(default=None,primary_key=True)
-    print(client.delete("client_testtable"))
+        id: Optional[int] = f(default=None,primary_key=True)
+        name: str
+        version: str
+
+    print({i:book.__dict__[i] for i in book.__dict__ if isinstance(book.__dict__[i],dict)})
+
+    client.create_table(book.__name__,book)
+    # print(client.delete("client_testtable"))
     # print(Column.__dict__)
     # print(PyDatabaseClient.__dict__)
     # print(client.create_table("client_testtable",Column("name", "TEXT","False")))

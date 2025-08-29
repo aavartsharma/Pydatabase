@@ -81,7 +81,7 @@ with Session(engine) as session:
         return type(class_name, (SQLModel,), attrs,table=True)
 
 
-# Example: define fields dynamically
+    # Example: define fields dynamically
     user = create_dynamic_model(
         "user",
         {
