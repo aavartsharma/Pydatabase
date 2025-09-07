@@ -1,5 +1,7 @@
 """provide a fast a api to my syslink modules to queay data in pydatabase"""
 import logger
+import pickle
+import base64
 import sqlite3
 import traceback
 from config import Config
@@ -19,8 +21,13 @@ db = PyDatabase()
 class SQLQueryRequest(BaseModel):
     clint_name: str
     table_name: str
+    columns: type
     query: Optional[str] = None
     params: Optional[List[Any]] = None
+
+# class SQLQueryCreateTable(BaseModel):
+#     client_name: str
+#     pickled: str
 
 # class SQLQuery(BaseModel):
 #     table_name: str
@@ -32,6 +39,7 @@ class SQLQueryRequest(BaseModel):
 
 # class fetchRequest(BaseModel):
 #     table_name: str 
+
 
 @app.post("/table/fetch/{client_token}")
 async def fetch(client_token: str, query: SQLQueryRequest):
@@ -81,21 +89,26 @@ async def fetch(client_token: str, query: SQLQueryRequest):
 
 #         raise HTTPException(status_code=401, detail="Authentication failed")
 
+class PickledData(BaseModel):
+    name: str
+    pickled: dict
+
 @app.post("/table/create/{client_token}")
-async def create_table(client_token:str ,request: SQLQueryRequest):  #   current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)
+async def create_table(client_token:str ,pickled: PickledData):  #   current_user: Dict[str, Any] = Depends(SecurityManager.verify_token)
     """Create a new table"""
     try:
         # db.
-        logging.info(request.query)
+        # logging.info(request.query)
         logging.info(f"client_token is {client_token}")
+        logging.info(pickled.pickled)
         
         result = db.create_table(
-            "testuser",
-            request.table_name,
-            *columns
+            client_token,
+            pickled.name,
+            pickled.pickled
         )
         logging.info(f"result of create_table is {result}")
-        return result
+        return "okay"
     except ValueError as e:
         logging.error(f"Error : {str(e)}")
         traceback.print_exc()

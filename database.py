@@ -1,6 +1,8 @@
 import logger
 import sqlite3 
 import keyword
+import pickle
+import base64
 from config import Config    # config.py
 from syslinkPy import Enum    # this is not any official libary in python
 from datetime import datetime  
@@ -111,7 +113,7 @@ class PyDatabase():
         session.exec(statement)
         session.commit()
 
-    def create_table(self,table_name, **attrbuies):  # maek a system later
+    def create_table(self,clinet_name,table_name, class_data):  # maek a system later
         # test1 = create_model(
         #     "test1",
         #     __base__=SQLModel,
@@ -122,12 +124,20 @@ class PyDatabase():
         #     dmg=(int, field())
         # )
         # classname:type
+        class_dict: dict = {
+            i: (  pickle.loads(  base64.b64decode(class_data[i][0].encode("utf-8"))  ),field(**class_data[i][1])  )
+            for i in class_data
+        }
+
+        logging.info(f"the value data at create_table: {class_data}")
+        logging.info(f"the last class_dict value : {class_dict}")
+        
         classname = create_model(
             table_name,
             __base__=SQLModel,
             __tablename__=table_name,
             __cls_kwargs__={"table":True},
-            **attrbuies
+            **class_dict
         )
         SQLModel.metadata.create_all(self.engine)
 

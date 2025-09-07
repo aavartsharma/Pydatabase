@@ -1,19 +1,19 @@
 import urllib3
 import requests
 # import pandas as pd
+import dill
+import pickle
+import base64
 import inspect
 from syslinkPy import Enum
 from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 from pydantic import Field, BaseModel
 import json
-
+import traceback
 
 
 # make a class with ispect
-
-
-
 
 # Disable SSL verification warnings for self-signed certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -66,30 +66,41 @@ class PyDatabaseClient:
         response.raise_for_status()
         return response.json()
     
-    def create_table(self,table_name:str, *columns: List[type]):
+    def create_table(self, table_: type):
         """clint_name: str
     table_name: str
     query: Optional[str] = None
     params: Optional[List[Any]] = None"""
         try:
-            listc = [json.dumps({j:book.__dict__[j] for j in book.__dict__ if isinstance(i.__dict__[j],dict)}) for i in columns]
-            print(listc)
-            payload = {
-                "name": "test_dummy2",
-                "table_name": table_name,
-                "query": None,
-                "columns": listc
-            }
-            print(payload)
+            # listc = [json.dumps({j:pickle.dumps(book.__dict__[j]) if isinstance(book.__dict__[j],type) else j: book.__dict__[j] for j in book.__dict__ if isinstance(i.__dict__[j],dict)}) for i in columns]
+            # print(listc)
+            # payload = {
+            #     "name": "test_dummy2",
+            #     "table_name": table_name,
+            #     "query": None,
+            #     "columns": listc
+            # }
+            # print(payload)
+            # cls1 = base64.b64encode(dill.dumps(columns[0])).decode("utf-8")
+            # print(cls1)
+            class_data = table_.__dict__
+            print(table_.__dict__)
+            #  create a funtion that will return a dict for the all of
+            class_dict = {i:(base64.b64encode(pickle.dumps(class_data['__annotations__'][i])).decode("utf-8"),class_data[i] if class_data.get(i)  else {}) for i in class_data["__annotations__"]}
+            print(class_dict)
+            # print([i for i in class_dict["id"][1]])
+
             response = self._make_request(
                 method.post,
                 f"table/create/{self.token}",
-                json=payload
+                json={"pickled":class_dict,"name": table_.__name__}
             )
             return response
         except Exception as e:
             print(e)
-            raise e
+            print("Error details: ")
+            traceback.print_exc()
+            # raise e
             return str(e)
             # print(str(e.http_error_msg))
     
