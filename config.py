@@ -9,11 +9,15 @@ class Config:
     # Base configuration
     PROJECT_ROOT = Path(__file__).parent
     DATABASE_DIR = PROJECT_ROOT / "base"  # database should be under pybase control
+    DATABASE_MAIN = DATABASE_DIR / "base.db"
     LOGS_DIR = PROJECT_ROOT / "logs"
     LOGGING_YML = "logging.yaml"
+    LOG_LEVEL = "INFO"
+    LOG_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
+    MAX_LOG_SIZE = 10 * 1024 * 1024     # Maximum log file size (in bytes) - 10MB
+    LOG_BACKUP_COUNT = 30
     
     # Security settings
-    
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
     
     # Network settings
@@ -29,5 +33,3 @@ class Config:
         """Initialize required directories"""
         for directory in [Config.DATABASE_DIR, Config.LOGS_DIR]:
             directory.mkdir(exist_ok=True)
-        
-        # if(os.)

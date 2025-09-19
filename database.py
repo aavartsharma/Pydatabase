@@ -1,218 +1,192 @@
-import sqlite3  # for database
 import logger
+import sqlite3 
+import keyword
+import pickle
+import base64
 from config import Config    # config.py
-from syslinkPy import Enum
-from datetime import datetime   # for datetime
+from syslinkPy import Enum    # this is not any official libary in python
+from datetime import datetime  
+from pydantic import BaseModel, create_model
 from security import SecurityManager   # security.py
-from typing import Any, Dict, List, Optional, Union   # for type annotation
+from sqlalchemy.schema import CreateTable
+from sqlalchemy import inspect, Select,text
+from typing import Any, Dict, List, Optional, Union, TypeVar   # for type annotation
+from sqlmodel import Field as field, Session, SQLModel, create_engine, select, update
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger #(__name__,Config.version,"Idon'tknow",Config.project_name)
 # print(__file__)
-
+T = TypeVar("T")
 class status(Enum):
     success:str
     failed:str
 
-class Column:
-    def __init__(self,name:str ,typeof:str, isprimekey: bool = False , AUTOINCREMENT = False):
-        if(not isprimekey and AUTOINCREMENT):
-            raise ValueError("autoincrement is only allowed for primarykey")
-        self.name = name
-        self.typeof = typeof.capitalize()
-        self.isprimekey = isprimekey
-        self.AUTOINCREMENT = AUTOINCREMENT
+
+class Hero(SQLModel, table=True):
+    id: int | None = field(default=None, primary_key=True)
+    name: str
+    secret_name: str
+    age: int | None = None
     
-    def querystr(self) -> str:
-        return f'{name} {typeof} {"PRIMARY KEY" if isprimekey else ""} {"AUTOINCREMENT" if AUTOINCREMENT else ""}'
+class StaticMethodMeta(type):
+    def __new__(cls, name, bases, dct) -> type:
+        new_dct = {}
+        for key, value in dct.items():
+            if callable(value) and not key.startswith('__'):
+                value = staticmethod(value)
+            new_dct[key] = value
+        return super().__new__(cls,name, bases, new_dct)
 
 
-class PyDatabase:
-
+class PyDatabase():
     def __init__(self):
         self.security = SecurityManager()
-        self.db_path = Config.DATABASE_DIR / "base.db" 
-        self.conn = self._initialize_database()
+        self.engine = create_engine(f"sqlite:///{Config.DATABASE_MAIN}",echo=True)
+        self.inspector = inspect(self.engine)
 
-        self._execute_query_admin("""   
-            CREATE TABLE IF NOT EXISTS query_log (
-                Sno INTEGER PRIMARY KEY AUTOINCREMENT,
-                Query TEXT,
-                Timestamp TEXT,
-                Client TEXT,
-                Status TEXT
-            )
-        """)
+    def _initialize_database(self):
+        Config.init()
+        class query_log(SQLModel, table=True):
+            Sno: Opitonal[int] = field(primary_key=True)
+            Query: str
+            Time_Stamp: str
+            Client: str
+            Status: str
 
-        self._execute_query_admin("""
-            CREATE TABLE IF NOT EXISTS client (
-                Id TEXT PRIMARY KEY,
-                Name TEXT,
-                Token TEXT,
-                Joined TEXT,
-                Active TEXT,
-                Owned_Tables TEXT,
-                File_Location TEXT
-            )
-        """) 
+        class client(SQLModel, table=True):
+            Id: str = field(primary_key=True)
+            Name: str
+            Token: str
+            Joined: str
+            Active: str
+            Owned_tables: str
+            File_location: str
 
-        self._execute_query_admin("""
-            CREATE TABLE IF NOT EXISTS table_owner (
-                Table_Id TEXT PRIMARY KEY,
-                Table_Name TEXT,
-                Owner_Id TEXT,
-                Owner_name TEXT
-            ) 
-        """)
+        class table_owner(SQLModel, table=True):
+            Table_Id: str = field(primary_key=True)
+            Table_Name: str
+            Owner_Id: str
+            Owner_Name: str
 
-        self._execute_query_admin("""
-            CREATE TABLE IF NOT EXISTS client_log (
-                Log_Id TEXT PRIMARY KEY,
-                Client_Id TEXT,
-                Client_Name TEXT,
-                logged_In_At TEXT,
-                logged_Out_At TEXT
-            )
-        """)
-        self.conn.commit()
+        class client_log(SQLModel, table=True):
+            Id: str = field(primary_key=True)
+            Client_Id : str
+            Client_Name: str
+            Logged_In_At: str
+            Logged_Out_At: str
 
-    def _initialize_database(self) -> sqlite3.Connection:
-        """Initialize SQLite database with encryption"""
-        # Create database directory if it doesn't exist
-        Config.DATABASE_DIR.mkdir(exist_ok=True)
+        # query_log
+        # client
+        # table_owner
+        # client_log
+
+        SQLModel.metadata.create_all(self.engine)
         
-        # Create new database connection
-        conn = sqlite3.connect(str(self.db_path))
-        conn.row_factory = sqlite3.Row
-        print("row factory : ",conn.row_factory)
-        # Initialize query logging table and for now this should be changed
-        # there should be table crearte ion on intalixing
-        
-        return conn
-
-    def _insert_query(self,table_name: str, **column) -> status:
-        # print( f'INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})')
-        # logging.info(f"Inputs are {tuple(column[i] for i in column)}")
-        # logging.debug("sfsfs")
-        try:
-            self.conn.execute(
-                f"""INSERT INTO {table_name} ({",".join([i for i in column])}) VALUES ({",".join(["?" for i in range(len(column))])})""",
-                tuple(column[i] for i in column)
-            )
-            self.conn.commit()
-            return status.success
-        except Exception as e:
-            logging.error(f"Failed to log Query: {e}")
-            raise e
-            return status.failed
-    
+        return None
     
     def _log_query(self, query: str, user: str, status: str = status.success) -> None:
         """Log SQL query execution"""
         try:
             # print(_insert_query)
-            self._insert_query("query_log",Query=query,Timestamp=datetime.now().isoformat(" "),Client=user,Status = status)
+            self._insert_query("aavart",table_name="query_log",Query=query,Timestamp=datetime.now().isoformat(" "),Client=user,Status = status)
 
         except Exception as e:
            logging.error(f"Failed to log query: {e}")
            raise e
 
-        #try:
-         #   self.conn.execute(
-          #      "INSERT INTO query_log (query, timestamp, user, status) VALUES (?, ?, ?, ?)",
-           #     (query, datetime.now().isoformat(), user, status)
-            #)
-            #self.conn.commit()
-        #except Exception as e:
-            #logger.error(f"Failed to log query: {e}")
-    
-    def _execute_query(self, user: str,query: str, params: Optional[tuple] = None) -> Dict[str, Any]:
-        """Execute a SQL query with security checks"""
-        try:
-            cursor = self.conn.cursor()
-            if params:
-                cursor.execute(query, params)
-            else:
-                cursor.execute(query)
-            self.conn.commit()
-            columns = [description[0] for description in cursor.description]
-            results = [dict(zip(columns, row)) for row in cursor.fetchall()]
-            self._log_query(query, user)
-            return {
-                "columns": columns,
-                "rows": results,
-                "row_count": len(results),
-                "rows_affected": cursor.rowcount
-            }
-                
-        except Exception as e:
-            self._log_query(query, user, self.status.failed)
-            raise
-    
-    def _execute_query_admin(self,query: str, parmas: tuple | None = None) -> Dict: # here is no sql injection security
-        try: 
-            self.conn.cursor().execute(query)
-            self.conn.commit()
-            # logging.info(f"Query is {query}")
-            self._log_query(query,"admin",status.success)
-        except Exception as e:
-            self._log_query(query,"admin",status.failed)
-            raise e
-    
-    def _drop_table(self,tablename:str):
-        self.conn.cursor().execute(f"DROP TABLE {tablename}")
-        self.conn.commit()
-        pass
+    def fetch(self, table_name: str, statement: Select) -> List[Dict[str,any]]:
+        with Session(engine) as session:
+            persons = session.exec(statement).all()
+            return persons
 
-    def _delete_table(self,tablename:str):
-        self.conn.cursor().execute(f"DELETE FROM {tablename}")
-        self.conn.commit()
-        pass
+    def table_schema(self, table_name: str):
+        return self.inspector.get_columns(table_name)
 
-    def _clear_all(self):
-        self.conn.cursor().execute("""SELECT 'DROP TABLE IF EXISTS "' || name || '";'
-FROM sqlite_master
-WHERE type='table' AND nam;w
-                                   :e NOT LIKE 'sqlite_%';""")
-        self.conn.commit()
-        pass
+    def insert(self, cliebt_name: str, rows: List[T]) -> status:
+        with Session(self.engine) as session:
+            for i in rows:
+                session.add(i)
+            session.commit()
+            pass
+    
+    def update(self,table_name, condition, updates):
+        statment = update(table_class).where(condition).values(**updates)
+        session.exec(statement)
+        session.commit()
 
-    def create_table(self, table_name: str, user: str = "system", *columns: List[Column]) -> Dict[str, Any]:
-        """Create a new table with specified columns"""
-        # Validate table name (prevent SQL injection)
-        if not table_name.isalnum():
-            raise ValueError("Table name must be alphanumeric")
-            
-        query = f"""
-        CREATE TABLE IF NOT EXISTS {table_name} (
-            {', '.join(columns.querystr())}
+    def create_table(self,clinet_name,table_name, class_data):  # maek a system later
+        # test1 = create_model(
+        #     "test1",
+        #     __base__=SQLModel,
+        #     __tablename__='test1',
+        #     __cls_kwargs__={"table": True},
+        #     id=(Optional[int], field(default=None, primary_key=True)),
+        #     name=(str, field()),
+        #     dmg=(int, field())
+        # )
+        # classname:type
+        class_dict: dict = {
+            i: (  pickle.loads(  base64.b64decode(class_data[i][0].encode("utf-8"))  ),field(**class_data[i][1])  )
+            for i in class_data
+        }
+
+        logging.info(f"the value data at create_table: {class_data}")
+        logging.info(f"the last class_dict value : {class_dict}")
+        
+        classname = create_model(
+            table_name,
+            __base__=SQLModel,
+            __tablename__=table_name,
+            __cls_kwargs__={"table":True},
+            **class_dict
         )
-        """
-        print(query) 
-        return self.execute_query(user,query)
+        SQLModel.metadata.create_all(self.engine)
 
-    def verify_token(self, client_token: str) -> bool:
-        query = f"""select * from client where Id='{client_token}'"""
-        _execute_query("system",)
+    def delete(self, table_class, condition):
+        with Session(self.engine) as session:
+            statement = delete(table_class).where(condition)
+            session.exec(statement)
+            session.commit()
         pass
-    
-    def get_table_schema(self, table_name: str) -> List[Dict[str, str]]:
-        """Get schema information for a table"""
-        cursor = self.conn.cursor()
-        cursor.execute(f"PRAGMA table_info({table_name})")
-        return [
-            {
-                "name": row[1],
-                "type": row[2],
-                "notnull": bool(row[3]),
-                "pk": bool(row[5])
-            }
-            for row in cursor.fetchall()
-        ]
-                                 
+
+    def alter_table(self):
+        with self.engine.connect() as conn:
+            conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR"))
+            conn.commit()
+
+    def delete_all(self):
+        with Session(self.engine) as session:
+            statement = delete(table_class)
+            session.exec(statement)
+            session.commit()
+
+    def drop_table(self,table_class: T):
+        table_class.__table__.drop(self.engine)
+
+    def drop_table_all(self):
+        SQLModel.metadata.drop_all(self.engine)
+
+    def verify_token(self):
+        pass
+
+# -------------------- TEST AREA -------------------- #                               
 if (__name__ == "__main__"):  # for test componett of this file
-    a = PyDatabase()._execute_query
-    b = PyDatabase()._insert_query
-    print(b)
-    # print(b("table_owner",Table_Id = "asdf", Table_name= "aavart",Owner_Id="sdfsdf",Owner_Name="sfsdf"))
-    print(a("system","select * from client"))
+    db= PyDatabase()
+
+    # class test(SQLModel, table=True):
+    #     id: Optional[int] = field(primary_key=True)
+    #     name: str
+
+    # SQLModel.metadata.create_all(db.engine)
+    # rows = [test(id=1,name="aavar"), test(id=2,name="asf")]
+    # db.insert("sfsfsf", rows)
+    # db.insert("agsag", )
+    db.create_table("gun", 
+        id=(Optional[int],field(default=None,primary_key=True)),
+        name=(str,field()),
+        classs=(str,field())
+    )
+
+    
+    pass
+
 
