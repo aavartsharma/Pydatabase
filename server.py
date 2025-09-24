@@ -107,8 +107,9 @@ async def create_table(client_token:str ,pickled: PickledData):  #   current_use
             pickled.name,
             pickled.pickled
         )
+        db.insert(client_token, rows)
         logging.info(f"result of create_table is {result}")
-        return "okay"
+        return result
     except ValueError as e:
         logging.error(f"Error : {str(e)}")
         traceback.print_exc()
@@ -118,10 +119,15 @@ async def create_table(client_token:str ,pickled: PickledData):  #   current_use
         raise e
         raise HTTPException(status_code=500, detail=str(e))
 
+class insertData(BaseModel):
+    name: str
+    pickled: dict
+
 @app.post("/table/insert/{client_token}")
-async def insert_data(client_token: str,request: SQLQueryRequest):
+async def insert_data(client_token: str,request: insertData):
     try:
-        result= db.insert(client_token, request.table_name, **request.columns[0])
+        logging.info(f"insert_data have got input: {request.pickled}")
+        result = db.insert(client_token, request.pickled)
         return result
     except Exception as e:
         raise HTTPException(status_code=333,detail=str(e))

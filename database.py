@@ -1,8 +1,9 @@
 import logger
-import sqlite3 
-import keyword
 import pickle
 import base64
+import keyword
+import sqlite3 
+from models import init, clinet_object_hashmap
 from config import Config    # config.py
 from syslinkPy import Enum    # this is not any official libary in python
 from datetime import datetime  
@@ -21,11 +22,11 @@ class status(Enum):
     failed:str
 
 
-class Hero(SQLModel, table=True):
-    id: int | None = field(default=None, primary_key=True)
-    name: str
-    secret_name: str
-    age: int | None = None
+# class Hero(SQLModel, table=True):
+#     id: int | None = field(default=None, primary_key=True)
+#     name: str
+#     secret_name: str
+#     age: int | None = None
     
 class StaticMethodMeta(type):
     def __new__(cls, name, bases, dct) -> type:
@@ -42,44 +43,52 @@ class PyDatabase():
         self.security = SecurityManager()
         self.engine = create_engine(f"sqlite:///{Config.DATABASE_MAIN}",echo=True)
         self.inspector = inspect(self.engine)
+        self._initialize_database()
 
     def _initialize_database(self):
         Config.init()
-        class query_log(SQLModel, table=True):
-            Sno: Opitonal[int] = field(primary_key=True)
-            Query: str
-            Time_Stamp: str
-            Client: str
-            Status: str
+        init.init(self.engine)
+        # class query_log(SQLModel, table=True):
+        #     Sno: Opitonal[int] = field(primary_key=True)
+        #     Query: str
+        #     Time_Stamp: str
+        #     Client: str
+        #     Status: str
 
-        class client(SQLModel, table=True):
-            Id: str = field(primary_key=True)
-            Name: str
-            Token: str
-            Joined: str
-            Active: str
-            Owned_tables: str
-            File_location: str
+        # class client(SQLModel, table=True):
+        #     Id: str = field(primary_key=True)
+        #     Name: str
+        #     Token: str
+        #     Joined: str
+        #     Active: str
+        #     Owned_tables: str
+        #     File_location: str
 
-        class table_owner(SQLModel, table=True):
-            Table_Id: str = field(primary_key=True)
-            Table_Name: str
-            Owner_Id: str
-            Owner_Name: str
+        # class table_owner(SQLModel, table=True):
+        #     Table_Id: str = field(primary_key=True)
+        #     Table_Name: str
+        #     Owner_Id: str
+        #     Owner_Name: str
 
-        class client_log(SQLModel, table=True):
-            Id: str = field(primary_key=True)
-            Client_Id : str
-            Client_Name: str
-            Logged_In_At: str
-            Logged_Out_At: str
+        # class client_log(SQLModel, table=True):
+        #     Id: str = field(primary_key=True)
+        #     Client_Id : str
+        #     Client_Name: str
+        #     Logged_In_At: str
+        #     Logged_Out_At: str
+
+        # class clinet_object_hashmap(SQLModel,table=True):
+        #     Sno: Optional[int] = field(default=None, primary_key=True)
+        #     Client_Id: str
+        #     class_name: str
+            
 
         # query_log
         # client
         # table_owner
         # client_log
 
-        SQLModel.metadata.create_all(self.engine)
+        # SQLModel.metadata.create_all(self.engine)
         
         return None
     
@@ -101,12 +110,17 @@ class PyDatabase():
     def table_schema(self, table_name: str):
         return self.inspector.get_columns(table_name)
 
-    def insert(self, cliebt_name: str, rows: List[T]) -> status:
+    def create_class(self,table_name: str,*args: list[Dict]):
+        self.fetch(table_name,Select(clinet_object_hashmap).where(name==table_name))
+        
+        pass
+
+    def insert(self, client_name: str, rows: type) -> status:
         with Session(self.engine) as session:
-            for i in rows:
-                session.add(i)
+            logging.info(f"insert function is called - {rows}")
+            session.add(rows)
             session.commit()
-            pass
+        return status.success
     
     def update(self,table_name, condition, updates):
         statment = update(table_class).where(condition).values(**updates)
@@ -139,7 +153,10 @@ class PyDatabase():
             __cls_kwargs__={"table":True},
             **class_dict
         )
-        SQLModel.metadata.create_all(self.engine)
+        classname.__table__.create(self.engine)
+        # SQLModel.metadata.create_all(self.engine)
+        del classname
+        
 
     def delete(self, table_class, condition):
         with Session(self.engine) as session:
@@ -172,20 +189,20 @@ class PyDatabase():
 if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
 
-    # class test(SQLModel, table=True):
-    #     id: Optional[int] = field(primary_key=True)
-    #     name: str
+    class test(SQLModel, table=True):
+        id: Optional[int] = field(primary_key=True)
+        name: str
 
     # SQLModel.metadata.create_all(db.engine)
     # rows = [test(id=1,name="aavar"), test(id=2,name="asf")]
     # db.insert("sfsfsf", rows)
     # db.insert("agsag", )
-    db.create_table("gun", 
-        id=(Optional[int],field(default=None,primary_key=True)),
-        name=(str,field()),
-        classs=(str,field())
-    )
-
+    # db.create_table("gun", 
+    #     id=(Optional[int],field(default=None,primary_key=True)),
+    #     name=(str,field()),
+    #     classs=(str,field())
+    # )
+    # print(db.insert("notgiven", test(name="ada lovelace")))
     
     pass
 

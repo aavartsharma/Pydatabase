@@ -23,6 +23,30 @@ class method(Enum):
     put: str = "PUT"
     post: str = "POST"
 
+
+class BaseModel_Meta(type):
+    def __new__(cls,name: str, base: tuple[type], namespace: dict[str, any],**kwargs):
+        super().__setattr__(cls,"__config__", kwargs)
+        print(namespace)
+        return super().__new__(cls,name,base,namespace)
+
+    def __init__(cls,name: str, base: tuple,namespace: dict, **kwargs):
+        # cls.propery = kwargs
+        # print(cls.__name__)
+        super().__init__(name,base,namespace)
+    
+    def __call__(cls,**kwargs):
+        # print(cls.__name__)
+        super().__setattr__("__notation__", kwargs)
+        for i in kwargs:
+            super().__setattr__(i, kwargs[i])
+        return super().__call__()
+
+class BaseModel(metaclass=BaseModel_Meta):
+    def params(**kwargs):
+        return kwargs
+    pass
+
 class PyDatabaseClient:
     def __init__(self):
         self.base_url = f"http://0.0.0.0:{5000}" # should be accquied from envirment variable
@@ -104,11 +128,21 @@ class PyDatabaseClient:
             return str(e)
             # print(str(e.http_error_msg))
     
-    def insert(self,table_name: str,**data : Dict[str, str]) -> str:
+    def insert(self,data: type) -> str:
         """Insert a document into a collection"""
+        if (not isinstance(data, BaseModel)):
+            raise ValueError("bazinga")
+        # class_dict = {
+        #     i: (base64.b64encode(
+        #         pickle.dumps(
+        #             class_data['__annotations__'][i]
+        #         )
+        #     ).decode("utf-8")
+        #     ,class_data[i] if class_data.get(i)  else {}) for i in class_data["__annotations__"]}
+        
         payload={
-            "table_name": table_name,
-            "columns": [data]
+            "name": data.__class__.__name__,
+            "pickled": data.__notation__
         }
         print(data)
 
