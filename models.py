@@ -39,7 +39,7 @@ class client_log(SQLModel,table=True):
     Logged_In_At: str
 
 class clinet_object_hashmap(SQLModel,table=True):
-    Sno: Optional[int] = field(default=None, primary_key=True)
+    Sno: Optional[int] = Field(default=None, primary_key=True)
     Client_Id: str
     class_name: str
 

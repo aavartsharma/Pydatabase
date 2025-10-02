@@ -3,6 +3,7 @@ import pickle
 import base64
 import keyword
 import sqlite3 
+import traceback
 from models import init, clinet_object_hashmap
 from config import Config    # config.py
 from syslinkPy import Enum    # this is not any official libary in python
@@ -10,13 +11,13 @@ from datetime import datetime
 from pydantic import BaseModel, create_model
 from security import SecurityManager   # security.py
 from sqlalchemy.schema import CreateTable
-from sqlalchemy import inspect, Select,text
+from sqlalchemy import inspect, Select,text,Table
 from typing import Any, Dict, List, Optional, Union, TypeVar   # for type annotation
 from sqlmodel import Field as field, Session, SQLModel, create_engine, select, update
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger #(__name__,Config.version,"Idon'tknow",Config.project_name)
 # print(__file__)
-T = TypeVar("T")
+# T = TypeVar("T")
 class status(Enum):
     success:str
     failed:str
@@ -110,53 +111,70 @@ class PyDatabase():
     def table_schema(self, table_name: str):
         return self.inspector.get_columns(table_name)
 
-    def create_class(self,table_name: str,*args: list[Dict]):
-        self.fetch(table_name,Select(clinet_object_hashmap).where(name==table_name))
-        
-        pass
+    # def create_class(self,table_name: str):
+    #     # sturecture = self.fetch(table_name,Select(clinet_object_hashmap).where(name==table_name))
+    #     print(SQLModel.metadata.tables)
+    #     print(SQLModel.metadata)
+    #     class_table = SQLModel.metadata.tables[table_name]
+    #     print(class_table)
+    #     print(type(class_table))
+    #     return class_table
 
-    def insert(self, client_name: str, rows: type) -> status:
+    def create_class(self,table_name: str, class_data: dict):
+        # logging.info(f"creae")
+        logging.info(f"the value data at create_table: {class_data}")
+        class_dict: dict = {
+            i: (  
+                pickle.loads(base64.b64decode(class_data[i][0].encode("utf-8"))),
+                field(**class_data[i][1])
+            )
+            for i in class_data
+        }
+
+        logging.info(f"the last class_dict value : {class_dict}")
+        try:
+                # Before each test
+    # from sqlmodel import SQLModel
+            SQLModel.metadata.clear()
+            classname: type = create_model(
+                table_name,
+                __base__=SQLModel,
+                __tablename__=table_name,
+                __cls_kwargs__={"table":True},
+                # __table_args__={'extend_existing':True},
+                # extend_existing=True,
+                **class_dict
+            )
+            return classname
+        except Exception as e:
+            # logging.error(f"create_model has problem {")
+            traceback.print_exc()
+            raise e
+
+    def insert(self, client_name: str,table_name:str, class_dict: dict, class_args: dict) -> status:
         with Session(self.engine) as session:
-            logging.info(f"insert function is called - {rows}")
-            session.add(rows)
+            logging.info(f"insert function is called - {class_args}")
+            class_init = self.create_class(table_name,class_args)
+            session.add(class_init(**class_dict))
             session.commit()
         return status.success
+
+    # def insert(self, client_name: str, rows: type) -> status:
+    #     with Session(self.engine) as session:
+    #         logging.info(f"insert function is called - {rows}")
+    #         session.add(rows)
+    #         session.commit()
+    #     return status.success
     
     def update(self,table_name, condition, updates):
         statment = update(table_class).where(condition).values(**updates)
         session.exec(statement)
         session.commit()
 
-    def create_table(self,clinet_name,table_name, class_data):  # maek a system later
-        # test1 = create_model(
-        #     "test1",
-        #     __base__=SQLModel,
-        #     __tablename__='test1',
-        #     __cls_kwargs__={"table": True},
-        #     id=(Optional[int], field(default=None, primary_key=True)),
-        #     name=(str, field()),
-        #     dmg=(int, field())
-        # )
-        # classname:type
-        class_dict: dict = {
-            i: (  pickle.loads(  base64.b64decode(class_data[i][0].encode("utf-8"))  ),field(**class_data[i][1])  )
-            for i in class_data
-        }
-
-        logging.info(f"the value data at create_table: {class_data}")
-        logging.info(f"the last class_dict value : {class_dict}")
-        
-        classname = create_model(
-            table_name,
-            __base__=SQLModel,
-            __tablename__=table_name,
-            __cls_kwargs__={"table":True},
-            **class_dict
-        )
-        classname.__table__.create(self.engine)
-        # SQLModel.metadata.create_all(self.engine)
+    def create_table(self ,clinet_name:str ,table_name:str ,class_data:dict):  # maek a system later
+        classname = self.create_class(table_name,class_data)
+        SQLModel.metadata.create_all(self.engine,tables=[classname.__table__])
         del classname
-        
 
     def delete(self, table_class, condition):
         with Session(self.engine) as session:
@@ -176,7 +194,7 @@ class PyDatabase():
             session.exec(statement)
             session.commit()
 
-    def drop_table(self,table_class: T):
+    def drop_table(self,table_class):
         table_class.__table__.drop(self.engine)
 
     def drop_table_all(self):

@@ -23,34 +23,55 @@ class method(Enum):
     put: str = "PUT"
     post: str = "POST"
 
+def params(**kwargs):
+    return kwargs
 
 class BaseModel_Meta(type):
     def __new__(cls,name: str, base: tuple[type], namespace: dict[str, any],**kwargs):
-        super().__setattr__(cls,"__config__", kwargs)
-        print(namespace)
+        # super().__setattr__("__config__", kwargs)
+        print(f"name of the cls is {cls.__name__}")
+        print(f"name of the name is {name}")
+        print(f"bases is {base}")
+        print(f"namespace is {namespace}")
+        print(f"__new__ is called and here is kwargs value: {kwargs}")
+        # print(namespace)
         return super().__new__(cls,name,base,namespace)
 
-    def __init__(cls,name: str, base: tuple,namespace: dict, **kwargs):
+    def __init__(cls,name: str, base: tuple,namespace: dict,**kwargs):
+        print("__init__ class was called and kwargs is ", kwargs)
+        # cls.parmas = params
         # cls.propery = kwargs
         # print(cls.__name__)
         super().__init__(name,base,namespace)
     
     def __call__(cls,**kwargs):
-        # print(cls.__name__)
-        super().__setattr__("__notation__", kwargs)
-        for i in kwargs:
-            super().__setattr__(i, kwargs[i])
-        return super().__call__()
+        print(cls.__name__)
+        # super().__setattr__("__notation__", kwargs)
+        # for i in kwargs:
+            # super().__setattr__(i, kwargs[i])
+        obj = super().__call__()
+        obj.__dict__ = kwargs
+        print(obj)
+        return obj
 
 class BaseModel(metaclass=BaseModel_Meta):
+    @staticmethod
     def params(**kwargs):
         return kwargs
     pass
+
 
 class PyDatabaseClient:
     def __init__(self):
         self.base_url = f"http://0.0.0.0:{5000}" # should be accquied from envirment variable
         self.token: Optional[str] = "notgiven"   # will be provide by sysllinkl
+        self.make_dict = lambda class_data: {
+            i:(
+                base64.b64encode(pickle.dumps(class_data['__annotations__'][i])).decode("utf-8"),
+                class_data[i] if class_data.get(i)  else {}
+            ) 
+            for i in class_data["__annotations__"]
+        }
     
     @classmethod
     def define_obj():
@@ -108,16 +129,20 @@ class PyDatabaseClient:
             # cls1 = base64.b64encode(dill.dumps(columns[0])).decode("utf-8")
             # print(cls1)
             class_data = table_.__dict__
-            print(table_.__dict__)
+            print(f"class data is {class_data}")
             #  create a funtion that will return a dict for the all of
-            class_dict = {i:(base64.b64encode(pickle.dumps(class_data['__annotations__'][i])).decode("utf-8"),class_data[i] if class_data.get(i)  else {}) for i in class_data["__annotations__"]}
-            print(class_dict)
+            # class_dict = {i:(base64.b64encode(pickle.dumps(class_data['__annotations__'][i])).decode("utf-8"),class_data[i] if class_data.get(i)  else {}) for i in class_data["__annotations__"]}
+            class_dict = self.make_dict(class_data) # make_dict is defined in __init__
+            print(f"dict send response: {class_dict}")
             # print([i for i in class_dict["id"][1]])
 
             response = self._make_request(
                 method.post,
                 f"table/create/{self.token}",
-                json={"pickled":class_dict,"name": table_.__name__}
+                json={
+                    "table_name": table_.__name__,
+                    "pickled":class_dict
+                }
             )
             return response
         except Exception as e:
@@ -139,12 +164,16 @@ class PyDatabaseClient:
         #         )
         #     ).decode("utf-8")
         #     ,class_data[i] if class_data.get(i)  else {}) for i in class_data["__annotations__"]}
-        
+        class_dicta = type(data).__dict__
+        print(f"class_dicta value is {class_dicta}")
+        class_dict: dict = self.make_dict(class_data=class_dicta)
+        print(f"class dict value is {class_dict}")
         payload={
-            "name": data.__class__.__name__,
-            "pickled": data.__notation__
+            "table_name": data.__class__.__name__,
+            "pickled": data.__dict__,
+            "columns": class_dict
         }
-        print(data)
+        print(f"the payload value is {payload}")
 
         return self._make_request(
             method.post, 

@@ -90,7 +90,7 @@ async def fetch(client_token: str, query: SQLQueryRequest):
 #         raise HTTPException(status_code=401, detail="Authentication failed")
 
 class PickledData(BaseModel):
-    name: str
+    table_name: str
     pickled: dict
 
 @app.post("/table/create/{client_token}")
@@ -104,10 +104,10 @@ async def create_table(client_token:str ,pickled: PickledData):  #   current_use
         
         result = db.create_table(
             client_token,
-            pickled.name,
+            pickled.table_name,
             pickled.pickled
         )
-        db.insert(client_token, rows)
+        # db.insert(client_token, pickled.table_name)
         logging.info(f"result of create_table is {result}")
         return result
     except ValueError as e:
@@ -120,16 +120,20 @@ async def create_table(client_token:str ,pickled: PickledData):  #   current_use
         raise HTTPException(status_code=500, detail=str(e))
 
 class insertData(BaseModel):
-    name: str
+    table_name: str
     pickled: dict
+    columns: dict
 
 @app.post("/table/insert/{client_token}")
 async def insert_data(client_token: str,request: insertData):
     try:
         logging.info(f"insert_data have got input: {request.pickled}")
-        result = db.insert(client_token, request.pickled)
+        result = db.insert(client_token,request.table_name, request.pickled, request.columns)
+        logging.info(f"insert data success: {result}")
         return result
     except Exception as e:
+        logging.error(f"Error in insert endpoint - {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=333,detail=str(e))
 
 @app.post("/table/update/{client_token}")
