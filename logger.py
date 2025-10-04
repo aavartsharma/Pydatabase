@@ -1,32 +1,43 @@
 import os
 import sys
 import logging
+from config import Config
 from datetime import datetime
 from typing import Optional, Dict, Any
-
+from logging.handlers import RotatingFileHandler
 # Configure logging
 
-class Config:
-    def __init__(self,**detail):
-        for i in ("name",'version','detail'):
-            if i not in detail:
-                raise AttributeError(f"{i} is not specfiled")
-        for i in detail:
-            super().__setattr__(i,detail[i])
+class log_Config:
+    def __init__(self,name,version,detail,**details):
+        self.name = name
+        self.version = version
         self.detail = detail
+        for i in details:
+            super().__setattr__(i,details[i])
+        self.details = details
 
 class Utility:
     def __init__(self, **detail):
-        self.config = Config(**detail)
+        self.config = log_Config(**detail)
         self.start_time = datetime.now()
         self.basename= lambda x: os.path.basename(x)
         # self.logger = sekf._setup_logger(name,version,detail)
-
+        App_file_handler = RotatingFileHandler(
+            Config.LOG_APPLOG, 
+            maxBytes=Config.MAX_LOG_SIZE,
+            backupCount=Config.LOG_BACKUP_COUNT
+        )
+        Module_file_handler = RotatingFileHandler(
+            Config.LOG_MODULELOG + self.config.name,
+            maxBytes=Config.MAX_LOG_SIZE,
+            backupCount=Config.LOG_BACKUP_COUNT
+        )
         logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(name)s - %(lineno)d - %(message)s',
+            level=Config.LOG_LEVEL,
+            format=Config.LOG_DATA_FORMAT,
             handlers=[
-                logging.FileHandler(f'logs/app.log'),
+                App_file_handler,
+                Module_file_handler, 
                 logging.StreamHandler(sys.stdout)
             ]
         )

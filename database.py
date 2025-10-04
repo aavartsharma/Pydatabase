@@ -15,7 +15,8 @@ from sqlalchemy import inspect, Select,text,Table
 from typing import Any, Dict, List, Optional, Union, TypeVar   # for type annotation
 from sqlmodel import Field as field, Session, SQLModel, create_engine, select, update
 
-logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger #(__name__,Config.version,"Idon'tknow",Config.project_name)
+#(__name__,Config.version,"Idon'tknow",Config.project_name)
+logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger 
 # print(__file__)
 # T = TypeVar("T")
 class status(Enum):
@@ -103,10 +104,6 @@ class PyDatabase():
            logging.error(f"Failed to log query: {e}")
            raise e
 
-    def fetch(self, table_name: str, statement: Select) -> List[Dict[str,any]]:
-        with Session(engine) as session:
-            persons = session.exec(statement).all()
-            return persons
 
     def table_schema(self, table_name: str):
         return self.inspector.get_columns(table_name)
@@ -159,12 +156,14 @@ class PyDatabase():
             session.commit()
         return status.success
 
-    # def insert(self, client_name: str, rows: type) -> status:
-    #     with Session(self.engine) as session:
-    #         logging.info(f"insert function is called - {rows}")
-    #         session.add(rows)
-    #         session.commit()
-    #     return status.success
+    # class fetchData(SQLModel,)
+    def fetch(self, client_token:str, statement: Select) -> List[Dict[str,any]]:
+        with Session(engine) as session:
+            logging.info(f"statement - {statement}")
+            persons = session.exec(statement)
+            logging.info(f"session.exec - {persons}")
+            logging.info(f"session.exec.all() - {(n:=persons.all())}")
+            return n
     
     def update(self,table_name, condition, updates):
         statment = update(table_class).where(condition).values(**updates)
@@ -211,8 +210,26 @@ if (__name__ == "__main__"):  # for test componett of this file
         id: Optional[int] = field(primary_key=True)
         name: str
 
+    #================ querys =================#
+        # select(test)
+        # select(test).where(User.name == "name")
+        # select(test.name, test.id)
+        # select(test).order_by(user.aga.desc())
+        # select(test).limit(5)
+        # select(test).offset(5)
+        # 
+
     # SQLModel.metadata.create_all(db.engine)
-    # rows = [test(id=1,name="aavar"), test(id=2,name="asf")]
+    with Session(db.engine) as session:
+        rows = [test(id=1,name="aavar"), test(id=2,name="asf")]
+        # [session.add(i) for i in rows]
+        # session.add_all(rows)
+        # session.commit()
+        # session.refresh()
+        statement = select(test)
+        print(f"select is {statement.__dict__} ans where is {statement.where(test.name).__dict__}")
+        print(f"select is type - {type(statement)} and where type - {type(statement.where(test.name=='ava'))}")
+
     # db.insert("sfsfsf", rows)
     # db.insert("agsag", )
     # db.create_table("gun", 
