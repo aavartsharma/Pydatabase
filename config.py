@@ -21,7 +21,7 @@ class Config:
     LOG_MODULELOG = 'logs/module_logs/'
     LOG_ERROR_LOG = 'logs/bugsanderror_log/'
     LOG_LEVEL =  logging.DEBUG if dev else logging.INFO 
-    LOG_DATE_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(lineno)d - %(message)s', 
+    LOG_DATE_FORMAT = '%(asctime)s - %(levelname)s - %(name)s - %(lineno)d - %(message)s' 
     MAX_LOG_SIZE = 10 * 1024 * 1024     # Maximum log file size (in bytes) - 10MB
     LOG_BACKUP_COUNT = 30
     # Security settings

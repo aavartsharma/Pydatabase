@@ -1,7 +1,11 @@
 import logger
 import socket
+import sys
 import uvicorn
 from config import Config
+
+if sys.version_info < (3, 12):
+    raise RuntimeError("Python 3.12 or higher is required.")
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger
 

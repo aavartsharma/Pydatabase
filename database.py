@@ -16,9 +16,8 @@ from typing import Any, Dict, List, Optional, Union, TypeVar   # for type annota
 from sqlmodel import Field as field, Session, SQLModel, create_engine, select, update
 
 #(__name__,Config.version,"Idon'tknow",Config.project_name)
-logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger 
-# print(__file__)
-# T = TypeVar("T")
+logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger
+
 class status(Enum):
     success:str
     failed:str
@@ -50,41 +49,6 @@ class PyDatabase():
     def _initialize_database(self):
         Config.init()
         init.init(self.engine)
-        # class query_log(SQLModel, table=True):
-        #     Sno: Opitonal[int] = field(primary_key=True)
-        #     Query: str
-        #     Time_Stamp: str
-        #     Client: str
-        #     Status: str
-
-        # class client(SQLModel, table=True):
-        #     Id: str = field(primary_key=True)
-        #     Name: str
-        #     Token: str
-        #     Joined: str
-        #     Active: str
-        #     Owned_tables: str
-        #     File_location: str
-
-        # class table_owner(SQLModel, table=True):
-        #     Table_Id: str = field(primary_key=True)
-        #     Table_Name: str
-        #     Owner_Id: str
-        #     Owner_Name: str
-
-        # class client_log(SQLModel, table=True):
-        #     Id: str = field(primary_key=True)
-        #     Client_Id : str
-        #     Client_Name: str
-        #     Logged_In_At: str
-        #     Logged_Out_At: str
-
-        # class clinet_object_hashmap(SQLModel,table=True):
-        #     Sno: Optional[int] = field(default=None, primary_key=True)
-        #     Client_Id: str
-        #     class_name: str
-            
-
         # query_log
         # client
         # table_owner
@@ -209,6 +173,8 @@ if (__name__ == "__main__"):  # for test componett of this file
     class test(SQLModel, table=True):
         id: Optional[int] = field(primary_key=True)
         name: str
+    
+    print(f"output: ", type(test.name))
 
     #================ querys =================#
         # select(test)

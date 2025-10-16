@@ -42,7 +42,7 @@ class SQLQueryRequest(BaseModel):
 
 
 @app.post("/table/fetch/{client_token}")
-async def fetch(client_token: str, query: SQLQueryRequest):
+async def fetch(client_token: str, query: dict):
     """fetch data from database"""
     try:
         logging.info(query)

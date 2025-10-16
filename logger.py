@@ -27,14 +27,19 @@ class Utility:
             maxBytes=Config.MAX_LOG_SIZE,
             backupCount=Config.LOG_BACKUP_COUNT
         )
+        print(Config.MAX_LOG_SIZE)
+        print(Config.LOG_BACKUP_COUNT)
+        print(Config.LOG_MODULELOG + self.basename(self.config.name))
         Module_file_handler = RotatingFileHandler(
-            Config.LOG_MODULELOG + self.config.name,
+            Config.LOG_MODULELOG + self.basename(self.config.name),
             maxBytes=Config.MAX_LOG_SIZE,
             backupCount=Config.LOG_BACKUP_COUNT
         )
+        print(Config.LOG_LEVEL)
+        print(Config.LOG_DATE_FORMAT)
         logging.basicConfig(
             level=Config.LOG_LEVEL,
-            format=Config.LOG_DATA_FORMAT,
+            format=Config.LOG_DATE_FORMAT,
             handlers=[
                 App_file_handler,
                 Module_file_handler, 

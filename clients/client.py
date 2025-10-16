@@ -1,7 +1,7 @@
 import urllib3
 import requests
 # import pandas as pd
-import dill
+#import dill
 import pickle
 import base64
 import inspect
@@ -11,8 +11,6 @@ from typing import Any, Dict, List, Optional
 from pydantic import Field, BaseModel
 import json
 import traceback
-
-
 # make a class with ispect
 
 # Disable SSL verification warnings for self-signed certificates
@@ -23,8 +21,23 @@ class method(Enum):
     put: str = "PUT"
     post: str = "POST"
 
-def params(**kwargs):
-    return kwargs
+class column():
+    def __init__(self,table_name,colum,feild):
+        self.tal = (table_name,colum)
+        self.feild = feild 
+    #=> use @func to automate the (self.tal,self.__add__.__name__,other)
+    def __and__(self, other):
+        return (self.tal,self.__add__.__name__,other) 
+    def __or__(self, other):
+        return (self.tal,self.__add__.__name__,other)     
+    def __invert__(self):
+        return (self.tal,self.__invert__.__name__,)
+    def __gt__(self,other):
+        return (self.tal,self.__gt__.__name__,other) 
+    def __lt__(self,other):
+        return (self.tal, self.__lt__.__name__,other)
+    def __eq__(self,other):
+        return (self.tal, self.__eq__.__name__,other) 
 
 class BaseModel_Meta(type):
     def __new__(cls,name: str, base: tuple[type], namespace: dict[str, any],**kwargs):
@@ -34,6 +47,8 @@ class BaseModel_Meta(type):
         print(f"bases is {base}")
         print(f"namespace is {namespace}")
         print(f"__new__ is called and here is kwargs value: {kwargs}")
+        for i in namespace.get('__annotations__',{}):
+            namespace[i] = column(namespace['__qualname__'],i,namespace[i] if i in namespace else {})
         # print(namespace)
         return super().__new__(cls,name,base,namespace)
 
@@ -58,8 +73,20 @@ class BaseModel(metaclass=BaseModel_Meta):
     @staticmethod
     def params(**kwargs):
         return kwargs
-    pass
+    
+class query():
+    def __init__(self,**kwargs: dict[column]):
+        print(f"this the query dict: {kwargs}")
+        self.kwargs = kwargs
 
+    @staticmethod
+    def select(*args):  #=> return a instance of query
+        return query(select = [i.tal for i in args])
+
+    def where(self, statement: column):
+        # self.kwargs.where = 
+        self.kwargs['where'] = statement
+        return self
 
 class PyDatabaseClient:
     def __init__(self):
@@ -157,13 +184,7 @@ class PyDatabaseClient:
         """Insert a document into a collection"""
         if (not isinstance(data, BaseModel)):
             raise ValueError("bazinga")
-        # class_dict = {
-        #     i: (base64.b64encode(
-        #         pickle.dumps(
-        #             class_data['__annotations__'][i]
-        #         )
-        #     ).decode("utf-8")
-        #     ,class_data[i] if class_data.get(i)  else {}) for i in class_data["__annotations__"]}
+
         class_dicta = type(data).__dict__
         print(f"class_dicta value is {class_dicta}")
         class_dict: dict = self.make_dict(class_data=class_dicta)
@@ -190,19 +211,16 @@ class PyDatabaseClient:
         )
         return response["updated_count"]
 
-    def fetch(self,table_name:str,column: str = None):
-        try: 
-            payload = {
-                "table_name": table_name,
-                "conditions": column
-            }
+    def fetch(self,statement: query):
+        try:
             response = self._make_request(
                 method.post,
                 f"table/fetch/{self.token}",
-                json=payload
+                json=statement.__dict__
             )
             return response
         except Exception as e:
+            print(type(statement))
             print(e)
             return e
     
@@ -250,7 +268,6 @@ if(__name__ == "__main__"):
 
     print({i:book.__dict__[i] for i in book.__dict__ if isinstance(book.__dict__[i],dict)})
 
-    client.create_table(book.__name__,book)
     # print(client.delete("client_testtable"))
     # print(Column.__dict__)
     # print(PyDatabaseClient.__dict__)
@@ -264,7 +281,7 @@ if(__name__ == "__main__"):
     # name = Field("name")
     # query = (name == "aavart")
 
-    # # sta2 = SQLExpr("id=7")
-    # # onj = SQLExpr("name=aavart")
+    # # sta2 = kQLExpr("id=7")
+    # # onj = QLExpr("name=aavart")
     # print(client.fetch("client_testtable"))
 
