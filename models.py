@@ -1,7 +1,7 @@
-from sqlmodel import SQLModel, Field
-from typing import Optional
 import sys
 import inspect 
+from typing import Optional
+from sqlmodel import SQLModel, Field
 
 class User(SQLModel,table=True):
     id: int = Field(primary_key=True)
@@ -42,12 +42,13 @@ class clinet_object_hashmap(SQLModel,table=True):
     Sno: Optional[int] = Field(default=None, primary_key=True)
     Client_Id: str
     class_name: str
+    hashmap: str
 
 class init():
     # print(classes)
     
     @classmethod
-    def init(clse,engine):
+    def init(cls,engine):
         current_module = sys.modules[__name__]
         # classes = inspect.getmembers(current_module, inspect.isclass)
         classes = [

@@ -41,21 +41,6 @@ class SQLQueryRequest(BaseModel):
 #     table_name: str 
 
 
-@app.post("/table/fetch/{client_token}")
-async def fetch(client_token: str, query: dict):
-    """fetch data from database"""
-    try:
-        logging.info(query)
-        result =  db.fetch(
-            client_token,
-            query.table_name,
-            SQLExpr(query.conditions) if query.conditions else None
-        )
-        logging.info(f"result of the query is {result}")
-        return result
-    except Exception as e:
-        logging.error(f"Eror while fetching: {e}")
-        raise e
 
 # @app.post("/login")
 # async def login(request: LoginRequest):
@@ -136,6 +121,26 @@ async def insert_data(client_token: str,request: insertData):
         traceback.print_exc()
         raise HTTPException(status_code=333,detail=str(e))
 
+class fetchData(BaseModel):
+    query: dict    #=> query dict that contain strucetur of query
+    pickled: dict  #=> dict of class type casted to string 
+
+@app.post("/table/fetch/{client_token}")
+async def fetch(client_token: str, query: fetchData):
+    """fetch data from database"""
+    try:
+        logging.info(query)
+        result =  db.fetch(
+            client_token,
+            query.query,
+            query.pickled
+        )
+        logging.info(f"result of the query is {result}")
+        return result
+    except Exception as e:
+        logging.error(f"Eror while fetching: {e}")
+        raise e
+
 @app.post("/table/update/{client_token}")
 async def update(client_token:str):
     """asdfdsfsdfsd"""
@@ -174,5 +179,5 @@ async def options():
 
 @app.get("/test")
 async def test():
-    return {'status':"pass"}
+    return {'status':"pass"} #=> test
 

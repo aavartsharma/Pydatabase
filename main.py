@@ -4,8 +4,8 @@ import sys
 import uvicorn
 from config import Config
 
-if sys.version_info < (3, 12):
-    raise RuntimeError("Python 3.12 or higher is required.")
+# if sys.version_info < (3, 12):
+#     raise RuntimeError("Python 3.12 or higher is required.")
 
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger
 
@@ -26,6 +26,8 @@ def get_local_ip():
 if __name__ == "__main__":
     try:
         logging.info("Starting the Server...")
+        if(Config.dev): 
+            logging.warning("Run Serivce with DEVLOPER Mode")
         logging.info(f"Local ip of meachine is {get_local_ip()}")
         uvicorn.run("server:app",host=Config.HOST,port=Config.PORT,reload=True,log_config=Config.LOGGING_YML)
     except Exception as e:
