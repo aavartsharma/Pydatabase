@@ -48,10 +48,10 @@ class PyDatabase():
         self.inspector = inspect(self.engine)
         self._initialize_database()
         self.tables = lambda: {
-                cls.__tablename__: cls
-                for cls in SQLModel.__subclasses__()
-                if hasattr(cls, "__tablename__")
-            }
+            cls.__tablename__: cls
+            for cls in SQLModel.__subclasses__()
+            if hasattr(cls, "__tablename__")
+        }
 
     def _initialize_database(self):
         Config.init()
@@ -122,7 +122,7 @@ class PyDatabase():
             traceback.print_exc()
             raise e
 
-    def insert(self, client_name: str,table_name:str, class_dict: dict, class_args: dict) -> status:
+    def insert(self, client_name: str,table_name:str, class_dict: dict, class_args: dict) -> str:
         with Session(self.engine) as session:
             logging.info(f"insert function is called - {class_args}")
             # class_init = self.create_class(table_name,class_args)
@@ -135,7 +135,7 @@ class PyDatabase():
         return status.success
 
     # class fetchData(SQLModel,)
-    def fetch(self, client_token:str, statement: dict, class_list: list[str]) -> List[Dict[str,any]]:
+    def fetch(self, client_token: str, statement: dict, class_list: list[str]) -> List[Dict[str,Any]]:
         with Session(self.engine) as session:
             logging.info(f"statement - {statement}")
             #select(models.)
@@ -151,16 +151,18 @@ class PyDatabase():
             # DynamicUser = type("User", (SQLModel,), {"__annotations__": {k: v[0] for k, v in fields.items()},
             #                             **{k: Field(default=v[1]) for k, v in fields.items()},
             #                             "__table__": user_table})
+            # classes = {i:create_class(i,class_list[i]) for i in class_list}
+            # n = [(n:=sqlmodel.__dict__[i])(*statement[i]) if not n else n.__dict__(i)(statement[i]) for i in statement]
             breakpoint()
-            classes = {i:create_class(i,class_list[i]) for i in class_list}
-            n = [(n:=sqlmodel.__dict__[i])(*statement[i]) if not n else n.__dict__(i)(statement[i]) for i in statement]
+            
+
             result = session.exec(k).all() 
             logging.info(f"session.exec - {k}")
             logging.info(f"session.exec.all() - {result}")
             return result 
     
     def update(self,table_name, condition, updates):
-        statment = update(table_class).where(condition).values(**updates)
+        statment = update(table_name).where(condition).values(**updates)
         session.exec(statement)
         session.commit()
 
@@ -222,6 +224,7 @@ if (__name__ == "__main__"):  # for test componett of this file
         # session.commit()
         # session.refresh()
         statement = select(test).where(test.name == 'sdf')
+        # db.fetch('sdfd',stamet)
         breakpoint()
         print(f"select is {statement.__dict__} ans where is {statement.where(test.name).__dict__}")
         print(f"select is type - {type(statement)} and where type - {type(statement.where(test.name=='ava'))}")

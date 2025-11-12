@@ -7,9 +7,9 @@ import base64
 import inspect
 import logging
 from syslinkPy import Enum
-from pydantic import BaseModel
 from typing import Any, Dict, List, Optional
 from pydantic import Field, BaseModel
+from typing import Any
 import json
 import traceback
 # make a class with ispect
@@ -32,7 +32,7 @@ class method(Enum):
 
 
 class BaseModel_Meta(type):
-    def __new__(cls,name: str, base: tuple[type], namespace: dict[str, any],**kwargs):
+    def __new__(cls,name: str, base: tuple[type], namespace: dict[str, Any],**kwargs):
         # super().__setattr__("__config__", kwargs)
         logging.info(f"name of the cls is {cls.__name__}")
         logging.info(f"name of the name is {name}")
@@ -40,7 +40,7 @@ class BaseModel_Meta(type):
         logging.info(f"namespace is {namespace}")
         logging.info(f"__new__ is called and here is kwargs value: {kwargs}")
         for i in namespace.get('__annotations__',{}):
-            namespace[i] = column(namespace['__qualname__'],i,namespace[i] if i in namespace else {})
+            namespace[i] = Column(namespace['__qualname__'],i,namespace[i] if i in namespace else {})
         # logging.info(namespace)
         return super().__new__(cls,name,base,namespace)
 
@@ -63,52 +63,99 @@ class BaseModel_Meta(type):
 
 class BaseModel(metaclass=BaseModel_Meta):
     @staticmethod
-    def params(**kwargs):
+    def params(**kwargs) -> Any:
         return kwargs
     
-class column():
-    def __init__(self,table_name,colum,field):
-        self.tal = (table_name,colum)
-        self.field = field
-        self.perent_class_name = table_name
     #=> use @func to automate the (self.tal,self.__add__.__name__,other)
- 
-class SQLExpr():
-    def __init__(self,left,operator,right):
-        self.tal = {'left': left, 'operator': operator, 'right': right}
+
+class SQLExpr:
+    def __init__(self, left, operator, right=None):
         self.left = left
         self.operator = operator
         self.right = right
-    def __and__(self, other):
-        return SQLExpr(left=self,operator=self.__and__.__name__,right=other)
-    def __or__(self, other):
-        return SQLExpr(left=self,operator=self.__or__.__name__,right=other)     
-    def __invert__(self):
-        return SQLExpr(left=self,operator=self.__invert__.__name__,right=None)
-    def __gt__(self,other):
-        return SQLExpr(left=self,operator=self.__gt__.__name__,right=other) 
-    def __lt__(self,other):
-        return SQLExpr(left=self,operator=self.__lt__.__name__,right=other)
-    def __eq__(self,other):
-        return SQLExpr(left=self,operator=self.__eq__.__name__,right=other)
 
+    def __and__(self, other):
+        return SQLExpr(self, self.__and__.__name__, other)
+
+    def __or__(self, other):
+        return SQLExpr(self,  self.__or__.__name__, other)
+
+    def __invert__(self):
+        return SQLExpr(self,  self.__invert__.__name__, self)
+
+    def to_dict(self):
+        """Convert the SQLExpression into a nested dictionary."""
+        def serialize(obj):
+            if isinstance(obj, Column):
+                return {"table": obj.table_name, "column": obj.column_name}
+            elif isinstance(obj, SQLExpr):
+                return obj.to_dict()
+            else:
+                return obj
+
+        return {
+            "operator": self.operator,
+            "left": serialize(self.left),
+            "right": serialize(self.right) if self.right is not None else None
+        }
+
+    def __repr__(self):
+        return f"SQLExpr({self.left=}, {self.operator=}, {self.right=})"
+
+
+class Column:
+    def __init__(self, table_name, column_name, field= {}):
+        self.table_name = table_name
+        self.column_name = column_name
+        self.field = field
+
+    def __gt__(self, other):
+        return SQLExpr(self, self.__gt__.__name__, other)
+
+    def __lt__(self, other):
+        return SQLExpr(self,self.__lt__.__name__, other)
+
+    def __eq__(self, other):
+        return SQLExpr(self, self.__eq__.__name__, other)
+
+    def __ge__(self, other):
+        return SQLExpr(self, self.__ge__.__name__, other)
+
+    def __le__(self, other):
+        return SQLExpr(self, self.__le__.__name__, other)
+
+    def __ne__(self, other):
+        return SQLExpr(self, self.__le__.__name__, other)
+
+    def __repr__(self):
+        return f"Column({self.table_name}.{self.column_name})"
 class query():
-    def __init__(self,**kwargs: dict[column]):
+    #=> you can make a baseclass for query which will automate the process of making query sturces
+        #=> baseclass will give every instance of query a attribute which will contain a 
+        #=> sturcre of query then function like where can just return a value and ti 
+        #=> will be add to the attribute
+        #=> you can use decoretors
+    def __init__(self,**kwargs: Any):
         logging.info(f"this the query dict: {kwargs}")
         self.kwargs = kwargs
         logging.info("this is kwargs ", kwargs)
         breakpoint()
-        self.classes_list = list({item[0] for item in list(kwargs.values())[0] })
+        # self.classes_list = list({item[0] for item in list(kwargs.values())[0] })
         # logging.info(self.classes)
 
     @staticmethod
-    def select(*args):  #=> return a instance of query
-        return query(select = [i.tal for i in args])
+    def select(*args) -> Any:  #=> return a instance of query
+        breakpoint()
+        # columns_list: list[Column] = [i.tal for i in args]
+        return query(select = tuple(i for i in args))
 
-    def where(self, statement: column):
+    def where(self, statement: SQLExpr) -> Any:
         # self.kwargs.where = 
         self.kwargs['where'] = statement
         return self
+    # def a(self):
+    #     d = 
+    #     return kwargs
 
 class PyDatabaseClient:
     def __init__(self):
@@ -123,7 +170,7 @@ class PyDatabaseClient:
         }
     
     @classmethod
-    def define_obj():
+    def define_obj(cls) -> None:
         pass
 
     def login(self, token: str) -> bool:
@@ -160,7 +207,7 @@ class PyDatabaseClient:
         response.raise_for_status()
         return response.json()
     
-    def create_table(self, table_: type):
+    def create_table(self, table_: type) -> str:
         """clint_name: str
     table_name: str
     query: Optional[str] = None
@@ -181,18 +228,18 @@ class PyDatabaseClient:
             logging.info(f"class data is {class_data}")
             #  create a funtion that will return a dict for the all of
             # class_dict = {i:(base64.b64encode(pickle.dumps(class_data['__annotations__'][i])).decode("utf-8"),class_data[i] if class_data.get(i)  else {}) for i in class_data["__annotations__"]}
-            class_dict = self.make_dict(class_data) # make_dict is defined in __init__
+            class_dict: dict[str, Any] = self.make_dict(class_data) # make_dict is defined in __init__
             logging.info(f"dict send response: {class_dict}")
             # logging.info([i for i in class_dict["id"][1]])
 
-            response = self._make_request(
+            response: str = str(self._make_request(
                 method.post,
                 f"table/create/{self.token}",
                 json={
                     "table_name": table_.__name__,
                     "pickled":class_dict
                 }
-            )
+            ))
             return response
         except Exception as e:
             logging.error(f"Error - {e}", exc_info=True)
@@ -234,12 +281,30 @@ class PyDatabaseClient:
         )
         return response["updated_count"]
 
+    @staticmethod
+    def change(raw_object):
+        breakpoint()
+        if isinstance(raw_object,dict):
+            # for i in raw_object:
+            #     raw_object[i] =  change(raw_object[i])
+            new_tuple = {i:PyDatabaseClient.change(raw_object[i]) for i in raw_object}
+            return new_tuple
+        elif isinstance(raw_object,list) or isinstance(raw_object,tuple):
+            # new_tuple = 
+            # for i in range(len(raw_object)):
+            #     raw_object[i]= change(raw_object[i])
+            new_tuple = tuple(PyDatabaseClient.change(i) for i in raw_object)
+            return new_tuple
+        elif hasattr(raw_object,'__dict__'):
+            return PyDatabaseClient.change(raw_object.__dict__)
+        else: # is a normal
+            return raw_object
+
     def fetch(self,statement: query):
         try:
             breakpoint()
             payload = {
-                "query": statement.__dict__,
-                "pickled": {i:self.make_dict(i) for i in statement.classes_list}
+                "query": self.change(statement)
             }
             breakpoint()
             response = self._make_request(
@@ -310,7 +375,7 @@ if(__name__ == "__main__"):
     # name = Field("name")
     # query = (name == "aavart")
 
-    # # sta2 = kQLExpr("id=7")
-    # # onj = QLExpr("name=aavart")
+    # # sta2 = kQLSQLExpr("id=7")
+    # # onj = QLSQLExpr("name=aavart")
     # logging.info(client.fetch("client_testtable"))
 
