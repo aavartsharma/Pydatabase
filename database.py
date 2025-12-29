@@ -1,3 +1,4 @@
+import os 
 import logger
 import pickle
 import base64
@@ -14,10 +15,11 @@ from sqlalchemy.sql.elements import BinaryExpression
 from sqlalchemy.sql import operators
 from pydantic import BaseModel, create_model
 from models import init, clinet_object_hashmap #=> models.py
-from sqlalchemy import inspect, Select,text,Table, MetaData
+from sqlalchemy import inspect, select,text,Table, MetaData
 from sqlalchemy.exc import InvalidRequestError
 from typing import Any, Dict, List, Optional, Union, TypeVar   # for type annotation
-from sqlmodel import Field as field, Session, SQLModel, create_engine, select, update
+from sqlmodel import Field as field, Session, SQLModel, create_engine, select as Select, update
+from collections.abc import Iterable
 
 #(__name__,Config.version,"Idon'tknow",Config.project_name)
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger
@@ -47,6 +49,7 @@ class PyDatabase():
         self.engine = create_engine(f"sqlite:///{Config.DATABASE_MAIN}",echo=True)
         self.inspector = inspect(self.engine)
         self._initialize_database()
+        self.metadata = SQLModel.metadata
         self.tables = lambda: {
             cls.__tablename__: cls
             for cls in SQLModel.__subclasses__()
@@ -124,40 +127,28 @@ class PyDatabase():
 
     def insert(self, client_name: str,table_name:str, class_dict: dict, class_args: dict) -> str:
         with Session(self.engine) as session:
+            breakpoint()
+            class_init = self.create_class(table_name,class_args)
+            session.add(class_init(**class_dict))
+            session.commit()
             logging.info(f"insert function is called - {class_args}")
             # class_init = self.create_class(table_name,class_args)
             # session.add(class_init(**class_dict))
-            breakpoint()
-            models = tables()
-            session.add(models[table_name](**class_dict))
+            #breakpoint()
+            # why the hell this code is doing here
+            #models = self.tables()
+            #session.add(models[table_name](**class_dict))
             # SQLModel.__subclasses__()[table_name]()
-            session.commit()
+            #session.commit()
         return status.success
 
     # class fetchData(SQLModel,)
-    def fetch(self, client_token: str, statement: dict, class_list: list[str]) -> List[Dict[str,Any]]:
+    def fetch(self, client_token: str, statement: dict) -> List[Dict[str,Any]]:
         with Session(self.engine) as session:
             logging.info(f"statement - {statement}")
-            #select(models.)
-            # Build fields dynamically from columns
-            # fields: dict = {}
-            # for col in user_table.columns:
-            #     if col.primary_key:
-            #         fields[col.name] = (Optional[int], None)
-            #     else:
-            #         fields[col.name] = (col.type.python_type, ...)  # required field
-
-            # # Dynamically create SQLModel subclass
-            # DynamicUser = type("User", (SQLModel,), {"__annotations__": {k: v[0] for k, v in fields.items()},
-            #                             **{k: Field(default=v[1]) for k, v in fields.items()},
-            #                             "__table__": user_table})
-            # classes = {i:create_class(i,class_list[i]) for i in class_list}
-            # n = [(n:=sqlmodel.__dict__[i])(*statement[i]) if not n else n.__dict__(i)(statement[i]) for i in statement]
-            breakpoint()
-            
-
-            result = session.exec(k).all() 
-            logging.info(f"session.exec - {k}")
+            query_created = self.query.create_q(statement,self.metadata,self.engine)
+            result = session.exec(query_created).all() 
+            logging.info(f"session.exec - {query_created}")
             logging.info(f"session.exec.all() - {result}")
             return result 
     
@@ -166,8 +157,67 @@ class PyDatabase():
         session.exec(statement)
         session.commit()
 
-    def create_table(self ,clinet_name:str ,table_name:str ,class_data:dict):  # maek a system later
+    class query():
+        """managing query relate operations"""
+        @staticmethod
+        def create_table_class(class_name: str, metadata, engine):
+            """create Table class for a table in database by it's name,metadata and engine"""
+            return Table(class_name,metadata, autoload_with= engine)
+
+        @staticmethod
+        def create_expr(expr_dict: dict, metadata, engine):
+            """convert dict --> SQLModel/sqlalchemy expression """
+            core_function = lambda x: PyDatabase.query.create_expr(x, metadata,engine)
+            if(all(i in expr_dict for i in ['left', 'operator','right']) if isinstance(expr_dict, Iterable) else False):
+                #=> if the dict is sql expression
+                breakpoint()
+                return getattr(core_function(expr_dict['left']),expr_dict['operator'])(core_function(expr_dict['right']))
+            elif (all(i in expr_dict for i in ['table', 'column']) if isinstance(expr_dict,Iterable) else False):
+                #=> if the dict is table 
+                breakpoint()
+                # return getattr(getattr(core_function(expr_dict['table']),'columns'),expr_dict['column'])
+                return getattr(getattr(PyDatabase.query.create_table_class(expr_dict['table'],metadata,engine),'columns'),expr_dict['column'])
+            else:
+                return expr_dict 
+
+        @staticmethod
+        def create_q(query_dict: dict, metadata, engine):
+            """converts whole query_dict to a SQLModel/sqlalchemy query"""
+            sql_query = None 
+            for i in query_dict:
+                if(sql_query == None):  #=> if it is a global function like select
+                    breakpoint()
+                    sql_query = globals()[i]  
+                else:
+                    sql_query = getattr(sql_query,i)   
+                match query_dict[i]:
+                    #=> query_dict[i] is the arguments of a function 
+                    #=> x is temp variable for query_dict[i]
+                    case x if isinstance(x, (list, tuple)):  #=> for most case x will be select function
+                        table_objects = [] 
+                        for j in x:
+                            breakpoint()
+                            name, col = j
+                            if(col):
+                                table_objects.append(PyDatabase.query.create_table_class(name,metadata,engine).columns[col]) 
+                            else:
+                                table_objects.append(PyDatabase.query.create_table_class(name,metadata,engine))
+                        sql_query = sql_query(*table_objects)
+
+                    case x if isinstance(x, dict):
+                        sql_query = sql_query(PyDatabase.query.create_expr(x, metadata, engine)) 
+
+                    case x if isinstance(x, (int,str)):
+                        sql_query = sql_query(x) 
+                    case _:
+                        logging.error(f"{_} has inappropriate datatype")
+
+            return sql_query 
+        
+
+    def create_table(self ,clinet_name:str ,table_name:str ,class_data:dict):  # make a system later
         classname = self.create_class(table_name,class_data)
+        logging.info(f"classname.__table__ is {classname.__table__}")
         SQLModel.metadata.create_all(self.engine,tables=[classname.__table__])
         # del classname
 
@@ -196,8 +246,12 @@ class PyDatabase():
 
     def verify_token(self):
         pass
-
+    
+# --------------------------------------------------- #
+# --------------------------------------------------- #
 # -------------------- TEST AREA -------------------- #                               
+# --------------------------------------------------- #
+# --------------------------------------------------- #
 if (__name__ == "__main__"):  # for test componett of this file
     db= PyDatabase()
 

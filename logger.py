@@ -27,16 +27,27 @@ class Utility:
             maxBytes=Config.MAX_LOG_SIZE,
             backupCount=Config.LOG_BACKUP_COUNT
         )
+        Module_file_name: str = Config.LOG_MODULELOG + self.basename(self.config.name) + '.log'
         print(Config.MAX_LOG_SIZE)
         print(Config.LOG_BACKUP_COUNT)
-        print(Config.LOG_MODULELOG + self.basename(self.config.name))
-        Module_file_handler = RotatingFileHandler(
-            Config.LOG_MODULELOG + self.basename(self.config.name),
-            maxBytes=Config.MAX_LOG_SIZE,
-            backupCount=Config.LOG_BACKUP_COUNT
-        )
+        print(Module_file_name)
+        if(not os.path.exists(Config.LOG_MODULELOG)):
+            print(f"Creating {Config.LOG_MODULELOG} file")
+            os.makedirs(Config.LOG_MODULELOG)
+        try:
+            Module_file_handler = RotatingFileHandler(
+                Module_file_name,
+                maxBytes=Config.MAX_LOG_SIZE,
+                backupCount=Config.LOG_BACKUP_COUNT
+            )
+        except FileNotFoundError as e:
+            print(f'{Module_file_name} is not found')
+            raise e
+        except Exception as e:
+            raise e
         print(Config.LOG_LEVEL)
         print(Config.LOG_DATE_FORMAT)
+        
         logging.basicConfig(
             level=Config.LOG_LEVEL,
             format=Config.LOG_DATE_FORMAT,

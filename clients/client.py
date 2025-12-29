@@ -131,10 +131,10 @@ class Column:
         return f"Column({self.table_name}.{self.column_name})"
 class query():
     #=> you can make a baseclass for query which will automate the process of making query sturces
-        #=> baseclass will give every instance of query a attribute which will contain a 
-        #=> sturcre of query then function like where can just return a value and ti 
-        #=> will be add to the attribute
-        #=> you can use decoretors
+    #=> baseclass will give every instance of query a attribute which will contain a 
+    #=> sturcre of query then function like where can just return a value and ti 
+    #=> will be add to the attribute
+    #=> you can use decoretors
     def __init__(self,**kwargs: Any):
         logging.info(f"this the query dict: {kwargs}")
         self.kwargs = kwargs
@@ -147,11 +147,16 @@ class query():
     def select(*args) -> Any:  #=> return a instance of query
         breakpoint()
         # columns_list: list[Column] = [i.tal for i in args]
-        return query(select = tuple(i for i in args))
+        return query(select = tuple(
+            (i.table_name, i.column_name) if isinstance(i, Column) 
+            else (i.__name__, None) 
+            for i in args 
+        ))
 
     def where(self, statement: SQLExpr) -> Any:
         # self.kwargs.where = 
-        self.kwargs['where'] = statement
+        self.kwargs['where'] = statement.to_dict()
+        breakpoint()
         return self
     # def a(self):
     #     d = 
@@ -196,7 +201,7 @@ class PyDatabaseClient:
             "accept": 'application/json',
             "Content-Type": "application/json"
         }
-        logging.info(json)
+        logging.info(f'json that is being send : {json}')
         response = requests.request(
             method,
             f"{self.base_url}/{endpoint}",
@@ -209,9 +214,9 @@ class PyDatabaseClient:
     
     def create_table(self, table_: type) -> str:
         """clint_name: str
-    table_name: str
-    query: Optional[str] = None
-    params: Optional[List[Any]] = None"""
+            table_name: str
+            query: Optional[str] = None
+            params: Optional[List[Any]] = None"""
         try:
             # listc = [json.dumps({j:pickle.dumps(book.__dict__[j]) if isinstance(book.__dict__[j],type) else j: book.__dict__[j] for j in book.__dict__ if isinstance(i.__dict__[j],dict)}) for i in columns]
             # logging.info(listc)
@@ -296,7 +301,7 @@ class PyDatabaseClient:
             new_tuple = tuple(PyDatabaseClient.change(i) for i in raw_object)
             return new_tuple
         elif hasattr(raw_object,'__dict__'):
-            return PyDatabaseClient.change(raw_object.__dict__)
+            return PyDatabaseClient.change(raw_object.__dict__)['kwargs']
         else: # is a normal
             return raw_object
 

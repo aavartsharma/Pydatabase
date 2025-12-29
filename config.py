@@ -8,7 +8,6 @@ class Config:
     version = "1.0.1"
     #=> app settings
     dev = True
-
     #=> Base configuration
     PROJECT_ROOT = Path(__file__).parent
     DATABASE_DIR = PROJECT_ROOT / "base"  # database should be under pybase control

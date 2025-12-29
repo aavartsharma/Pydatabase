@@ -123,9 +123,8 @@ async def insert_data(client_token: str,request: insertData):
 
 class fetchData(BaseModel):
     query: dict    #=> query dict that contain strucetur of query
-    pickled: dict  #=> dict of class type casted to string 
 
-@app.post("/table/fetch/{client_token}")
+@app.post("/table/fetch/{client_token}", response_model= List)
 async def fetch(client_token: str, query: fetchData):
     """fetch data from database"""
     try:
@@ -133,9 +132,10 @@ async def fetch(client_token: str, query: fetchData):
         result =  db.fetch(
             client_token,
             query.query,
-            query.pickled
         )
+        result = [tuple(i) for i in result]
         logging.info(f"result of the query is {result}")
+        breakpoint()
         return result
     except Exception as e:
         logging.error(f"Eror while fetching: {e}")
