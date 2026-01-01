@@ -1,5 +1,7 @@
-from sqlmodel import SQLModel, Field
+import sys
+import inspect 
 from typing import Optional
+from sqlmodel import SQLModel, Field
 
 class User(SQLModel,table=True):
     id: int = Field(primary_key=True)
@@ -35,3 +37,22 @@ class client_log(SQLModel,table=True):
     Client_Name: str
     Logged_In_At: str
     Logged_In_At: str
+
+class clinet_object_hashmap(SQLModel,table=True):
+    Sno: Optional[int] = Field(default=None, primary_key=True)
+    Client_Id: str
+    class_name: str
+    hashmap: str
+
+class init():
+    @classmethod
+    def init(cls,engine):
+        current_module = sys.modules[__name__]
+        # classes = inspect.getmembers(current_module, inspect.isclass)
+        classes = [
+            cls.__table__ for name, cls in inspect.getmembers(current_module, inspect.isclass)
+            if cls.__module__ == __name__ and not (cls is init)  # belongs to this module
+        ]
+        
+        # print(classes)
+        SQLModel.metadata.create_all(engine,tables=classes)

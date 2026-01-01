@@ -41,21 +41,6 @@ class SQLQueryRequest(BaseModel):
 #     table_name: str 
 
 
-@app.post("/table/fetch/{client_token}")
-async def fetch(client_token: str, query: SQLQueryRequest):
-    """fetch data from database"""
-    try:
-        logging.info(query)
-        result =  db.fetch(
-            client_token,
-            query.table_name,
-            SQLExpr(query.conditions) if query.conditions else None
-        )
-        logging.info(f"result of the query is {result}")
-        return result
-    except Exception as e:
-        logging.error(f"Eror while fetching: {e}")
-        raise e
 
 # @app.post("/login")
 # async def login(request: LoginRequest):
@@ -90,7 +75,7 @@ async def fetch(client_token: str, query: SQLQueryRequest):
 #         raise HTTPException(status_code=401, detail="Authentication failed")
 
 class PickledData(BaseModel):
-    name: str
+    table_name: str
     pickled: dict
 
 @app.post("/table/create/{client_token}")
@@ -104,11 +89,12 @@ async def create_table(client_token:str ,pickled: PickledData):  #   current_use
         
         result = db.create_table(
             client_token,
-            pickled.name,
+            pickled.table_name,
             pickled.pickled
         )
+        # db.insert(client_token, pickled.table_name)
         logging.info(f"result of create_table is {result}")
-        return "okay"
+        return result
     except ValueError as e:
         logging.error(f"Error : {str(e)}")
         traceback.print_exc()
@@ -118,13 +104,39 @@ async def create_table(client_token:str ,pickled: PickledData):  #   current_use
         raise e
         raise HTTPException(status_code=500, detail=str(e))
 
+class insertData(BaseModel):
+    query: dict
 @app.post("/table/insert/{client_token}")
-async def insert_data(client_token: str,request: SQLQueryRequest):
+async def insert_data(client_token: str,request: insertData):
     try:
-        result= db.insert(client_token, request.table_name, **request.columns[0])
+        logging.info(f"insert_data have got input: {request.query}")
+        result = db.insert(client_token,request.query)
+        logging.info(f"insert data success: {result}")
         return result
     except Exception as e:
+        logging.error(f"Error in insert endpoint - {str(e)}")
+        traceback.print_exc()
         raise HTTPException(status_code=333,detail=str(e))
+
+class fetchData(BaseModel):
+    query: dict    #=> query dict that contain strucetur of query
+
+@app.post("/table/fetch/{client_token}", response_model= List)
+async def fetch(client_token: str, query: fetchData):
+    """fetch data from database"""
+    try:
+        logging.info(query)
+        result =  db.fetch(
+            client_token,
+            query.query,
+        )
+        result = [tuple(i) for i in result]
+        logging.info(f"result of the query is {result}")
+        breakpoint()
+        return result
+    except Exception as e:
+        logging.error(f"Eror while fetching: {e}")
+        raise e
 
 @app.post("/table/update/{client_token}")
 async def update(client_token:str):
@@ -164,5 +176,5 @@ async def options():
 
 @app.get("/test")
 async def test():
-    return {'status':"pass"}
+    return {'status':"pass"} #=> test
 

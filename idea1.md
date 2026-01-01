@@ -1,0 +1,1 @@
+you can track ideas in a branch every solution for the a problem in making a part of software and the solution for that can me visualed as a tree and following that this will make easy to track the devlopment of a software
