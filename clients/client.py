@@ -1,7 +1,5 @@
 import urllib3
 import requests
-# import pandas as pd
-#import dill
 import pickle
 import base64
 import inspect
@@ -152,11 +150,18 @@ class query():
             else (i.__name__, None) 
             for i in args 
         ))
+    @staticmethod
+    def insert(*args):
+        return query(insert=tuple((i.__name__,None) for i in args))
 
     def where(self, statement: SQLExpr) -> Any:
         # self.kwargs.where = 
         self.kwargs['where'] = statement.to_dict()
         breakpoint()
+        return self
+
+    def values(self, **kwargs):
+        self.kwargs['values'] = kwargs
         return self
     # def a(self):
     #     d = 
@@ -259,18 +264,23 @@ class PyDatabaseClient:
         """Insert a document into a collection"""
         if (not isinstance(data, BaseModel)):
             raise ValueError("bazinga")
+        breakpoint()
+        insert_query = query.insert(type(data)).values(**data.__dict__)
+        breakpoint()
+        # class_dicta = type(data).__dict__
+        # logging.info(f"class_dicta value is {class_dicta}")
+        # class_dict: dict = self.make_dict(class_data=class_dicta)
+        # logging.info(f"class dict value is {class_dict}")
+        # payload={
+        #     "table_name": data.__class__.__name__,
+        #     "pickled": data.__dict__,
+        #     "columns": class_dict
+        # }
 
-        class_dicta = type(data).__dict__
-        logging.info(f"class_dicta value is {class_dicta}")
-        class_dict: dict = self.make_dict(class_data=class_dicta)
-        logging.info(f"class dict value is {class_dict}")
-        payload={
-            "table_name": data.__class__.__name__,
-            "pickled": data.__dict__,
-            "columns": class_dict
+        payload = {
+            "query": self.change(insert_query)
         }
         logging.info(f"the payload value is {payload}")
-
         return self._make_request(
             method.post, 
             f"table/insert/{self.token}",
@@ -301,6 +311,7 @@ class PyDatabaseClient:
             new_tuple = tuple(PyDatabaseClient.change(i) for i in raw_object)
             return new_tuple
         elif hasattr(raw_object,'__dict__'):
+            breakpoint()   #=> this line is problem somehow __dict__ of person class is being stuce here
             return PyDatabaseClient.change(raw_object.__dict__)['kwargs']
         else: # is a normal
             return raw_object
@@ -311,13 +322,11 @@ class PyDatabaseClient:
             payload = {
                 "query": self.change(statement)
             }
-            breakpoint()
             response = self._make_request(
                 method.post,
                 f"table/fetch/{self.token}",
                 json=payload
             )
-            breakpoint()
             return response
         except Exception as e:
             logging.error(f"error occured: {e}")

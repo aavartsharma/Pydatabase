@@ -1,25 +1,41 @@
-import os 
 import logger
 import pickle
 import base64
-import keyword
-import sqlite3 
 import traceback
 import sqlmodel
-from config import Config    # config.py
-from syslinkPy import Enum    # this is not any official libary in python
+
+from config import Config                        #=> config.py
+from syslinkPy import Enum                       #=> this is not any official libary in python
+from security import SecurityManager             #=> security.py
+from models import init, clinet_object_hashmap   #=> models.py
+
 from datetime import datetime  
-from security import SecurityManager   # security.py
-from sqlalchemy.schema import CreateTable
-from sqlalchemy.sql.elements import BinaryExpression
-from sqlalchemy.sql import operators
 from pydantic import BaseModel, create_model
-from models import init, clinet_object_hashmap #=> models.py
+
 from sqlalchemy import inspect, select,text,Table, MetaData
 from sqlalchemy.exc import InvalidRequestError
-from typing import Any, Dict, List, Optional, Union, TypeVar   # for type annotation
-from sqlmodel import Field as field, Session, SQLModel, create_engine, select as Select, update
+from sqlalchemy.schema import CreateTable
+
+from sqlmodel import (
+    Field as field, 
+    Session, 
+    SQLModel, 
+    create_engine, 
+    select as Select, 
+    insert,
+    update
+)
+
 from collections.abc import Iterable
+from typing import (    #=> for type annotation
+    Any, 
+    Dict, 
+    List, 
+    Optional, 
+    Union, 
+    TypeVar
+)
+
 
 #(__name__,Config.version,"Idon'tknow",Config.project_name)
 logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow").logger
@@ -27,12 +43,7 @@ logging = logger.Utility(name=__file__,version=Config.version,detail="idnotknow"
 class status(Enum):
     success:str
     failed:str
-
-
-# class Hero(SQLModel, table=True):
-#     id: int | None = field(default=None, primary_key=True)
-#     name: str
-    
+   
 class StaticMethodMeta(type):
     def __new__(cls, name, bases, dct) -> type:
         new_dct = {}
@@ -41,7 +52,6 @@ class StaticMethodMeta(type):
                 value = staticmethod(value)
             new_dct[key] = value
         return super().__new__(cls,name, bases, new_dct)
-
 
 class PyDatabase():
     def __init__(self):
@@ -59,14 +69,7 @@ class PyDatabase():
     def _initialize_database(self):
         Config.init()
         init.init(self.engine)
-        # query_log
-        # client
-        # table_owner
-        # client_log
-
-        # SQLModel.metadata.create_all(self.engine)
-        
-        return None
+        #+> SQLModel.metadata.create_all(self.engine)
     
     def _log_query(self, query: str, user: str, status: str = status.success) -> None:
         """Log SQL query execution"""
@@ -118,20 +121,25 @@ class PyDatabase():
             return classname
         except InvalidRequestError as e:
             logging.error(f"{table_name} table is already created!!!")
-            return None
+            return self.tables()[table_name] 
             pass
         except Exception as e:
             # logging.error(f"create_model has problem {")
             traceback.print_exc()
             raise e
 
-    def insert(self, client_name: str,table_name:str, class_dict: dict, class_args: dict) -> str:
+    def insert(self, client_name: str,statement: dict) -> str:
         with Session(self.engine) as session:
+            logging.info(f"statement - {statement}")
+            query_created = self.query.create_q(statement,self.metadata,self.engine)
             breakpoint()
-            class_init = self.create_class(table_name,class_args)
-            session.add(class_init(**class_dict))
-            session.commit()
-            logging.info(f"insert function is called - {class_args}")
+            result = session.exec(query_created) 
+            logging.info(f"session.exec - {query_created}")
+            logging.info(f"session.exec.all() - {result}")
+
+            #session.add(class_init(**class_dict))
+            #session.commit()
+            #logging.info(f"insert function is called - {class_args}")
             # class_init = self.create_class(table_name,class_args)
             # session.add(class_init(**class_dict))
             #breakpoint()
@@ -152,10 +160,43 @@ class PyDatabase():
             logging.info(f"session.exec.all() - {result}")
             return result 
     
-    def update(self,table_name, condition, updates):
+    def update(self,client_token: str, statement: str) -> List[Dict[str,Any]]:
+        with Session(self.engine) as session:
+            logging.info(f'statement = {statement}')
+            query_created = self.query.create_q(statement,self.metadata,self.engine)
+            result = session.exec(query_created).all()
+            logging.info(f"session.exec - {query_created}")
+            logging.info(f"session.exec.all() - {result}")
+            session.commit()
+            return result
         statment = update(table_name).where(condition).values(**updates)
         session.exec(statement)
-        session.commit()
+
+    def delete(self, table_class, condition):
+        with Session(self.engine) as session:
+            statement = delete(table_class).where(condition)
+            session.exec(statement)
+            session.commit()
+
+    def alter_table(self):
+        with self.engine.connect() as conn:
+            conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR"))
+            conn.commit()
+
+    def delete_all(self):
+        with Session(self.engine) as session:
+            statement = delete(table_class)
+            session.exec(statement)
+            session.commit()
+
+    def drop_table(self,table_class):
+        table_class.__table__.drop(self.engine)
+
+    def drop_table_all(self):
+        SQLModel.metadata.drop_all(self.engine)
+
+    def verify_token(self):
+        pass
 
     class query():
         """managing query relate operations"""
@@ -219,34 +260,16 @@ class PyDatabase():
         classname = self.create_class(table_name,class_data)
         logging.info(f"classname.__table__ is {classname.__table__}")
         SQLModel.metadata.create_all(self.engine,tables=[classname.__table__])
-        # del classname
+        # del classname 
 
-    def delete(self, table_class, condition):
-        with Session(self.engine) as session:
-            statement = delete(table_class).where(condition)
-            session.exec(statement)
-            session.commit()
+#-_-_-_-_-_-_-_-_-_-_ End Of PyDatabase _-_-_-_-_-_-_-_-_-_#
 
-    def alter_table(self):
-        with self.engine.connect() as conn:
-            conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR"))
-            conn.commit()
 
-    def delete_all(self):
-        with Session(self.engine) as session:
-            statement = delete(table_class)
-            session.exec(statement)
-            session.commit()
 
-    def drop_table(self,table_class):
-        table_class.__table__.drop(self.engine)
 
-    def drop_table_all(self):
-        SQLModel.metadata.drop_all(self.engine)
 
-    def verify_token(self):
-        pass
-    
+
+
 # --------------------------------------------------- #
 # --------------------------------------------------- #
 # -------------------- TEST AREA -------------------- #                               

@@ -105,15 +105,12 @@ async def create_table(client_token:str ,pickled: PickledData):  #   current_use
         raise HTTPException(status_code=500, detail=str(e))
 
 class insertData(BaseModel):
-    table_name: str
-    pickled: dict
-    columns: dict
-
+    query: dict
 @app.post("/table/insert/{client_token}")
 async def insert_data(client_token: str,request: insertData):
     try:
-        logging.info(f"insert_data have got input: {request.pickled}")
-        result = db.insert(client_token,request.table_name, request.pickled, request.columns)
+        logging.info(f"insert_data have got input: {request.query}")
+        result = db.insert(client_token,request.query)
         logging.info(f"insert data success: {result}")
         return result
     except Exception as e:

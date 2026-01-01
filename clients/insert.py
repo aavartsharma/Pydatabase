@@ -1,5 +1,6 @@
 from client import PyDatabaseClient
 from client import BaseModel
+from client import query
 
 db = PyDatabaseClient()
 
@@ -8,4 +9,5 @@ class person(BaseModel):
     name: str 
     cake: str
 
-db.insert(person(name='aavart',cake='sdf'))
+print(db.insert(person(name='shinomiya',cake='new')))
+breakpoint()

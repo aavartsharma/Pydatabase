@@ -45,8 +45,6 @@ class clinet_object_hashmap(SQLModel,table=True):
     hashmap: str
 
 class init():
-    # print(classes)
-    
     @classmethod
     def init(cls,engine):
         current_module = sys.modules[__name__]

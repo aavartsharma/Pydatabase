@@ -7,4 +7,4 @@ class person(BaseModel):
     id: int = BaseModel.params(primary_key = True)
     name: str
     cake: str
-print(db.fetch(query.select(person).where(person.cake == 'sdf')))
+print(db.fetch(query.select(person.name).where(person.cake == 'sdf')))
