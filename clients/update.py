@@ -10,9 +10,8 @@ class person2(BaseModel):
     name:str 
     password: int
 
-print(db.insert(person2(name='aavart', password = 33)))
-for i in "abcdefghijkvw" :
-    print(db.insert(person2(name=i,password=random.randint(0,100))))
+# print(db.insert(person2(name='aavart', password = 33)))
+print(db.update(query.update(person2).where(person2.id == 1).values(password=43)))
 
 
 

@@ -138,36 +138,64 @@ async def fetch(client_token: str, query: fetchData):
         logging.error(f"Eror while fetching: {e}")
         raise e
 
-@app.post("/table/update/{client_token}")
-async def update(client_token:str):
-    """asdfdsfsdfsd"""
-    pass
+class updateData(BaseModel):
+    query: dict
 
+@app.post("/table/update/{client_token}")
+async def update(client_token:str, query: updateData):
+    """Update entires on database"""
+    try:
+        logging.info(f"Update Query: {query.query}")
+        result = db.update(client_token , query.query)
+        logging.info(f"Result Update: {result}")
+        return result 
+    except Exception as e:
+        logging.error(f"Error while updating: {e}")
+        raise e
+class schemaData(BaseModel):
+    table_name: str
 @app.post("/table/schema/{client_token}")
-async def get_table_schema(client_token: str,_: Dict[str, Any] = Depends(SecurityManager.verify_token)):
+async def get_table_schema(client_token: str, query: schemaData): # _: Dict[str, Any] = Depends(SecurityManager.verify_token)
     """Get schema information for a table"""
     try:
-        return {"schema": db.table_schema(user_name,table_name)}
+        logging.info(f"schema Query: {query.table_name}")
+        return {"schema": db.table_schema(client_token,query.table_name)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class deleteData(BaseModel):
+    query: dict
 @app.post("/table/delete/{client_token}")
-async def delete(client_token: str, request: SQLQueryRequest):
+async def delete(client_token: str, query: deleteData):
     """delete table row in database"""
     try: 
         logging.info(f"Delete endpoint variables: {locals()}")
-        return db.delete(client_token,request.table_name,request.conditions)
+        result = db.delete(client_token, query.query) 
+        logging.info(f"Result Delete: {result}")
+        return result 
     except Exception as e:
         logging.error(f"Error occurted delete endpoint: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+class dropData(BaseModel):
+    table_name: str
 @app.post("/table/drop/{client_token}")
-async def drop(client_token: str, table_name: str | None = None):
+async def drop(client_token: str, query: dropData):
     """drop itn eh table"""
     try: 
-        return db.drop_table(table_name)
+        logging.info(f"args of drop : {locals()}")
+        return db.drop_table(client_token,query.table_name)
     except Exception as e:
+        logging.error(f"error occurted in drop: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/table/alter/{client_token}")
+async def alter(client_token: str, table_name: str | None = None):
+    """"""
+    try: 
+        return db.alter_table() 
+    except Exception as e:
+        raise HTTPException(status_code=500, detail= str(e))
 
 @app.post("/table/options")
 async def options():

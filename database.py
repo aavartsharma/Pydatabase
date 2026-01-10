@@ -21,9 +21,9 @@ from sqlmodel import (
     Session, 
     SQLModel, 
     create_engine, 
-    select as Select, 
     insert,
-    update
+    update,
+    delete
 )
 
 from collections.abc import Iterable
@@ -82,8 +82,7 @@ class PyDatabase():
            raise e
 
 
-    def table_schema(self, table_name: str):
-        return self.inspector.get_columns(table_name)
+    
 
     # def create_class(self,table_name: str):
     #     # sturecture = self.fetch(table_name,Select(clinet_object_hashmap).where(name==table_name))
@@ -164,33 +163,49 @@ class PyDatabase():
         with Session(self.engine) as session:
             logging.info(f'statement = {statement}')
             query_created = self.query.create_q(statement,self.metadata,self.engine)
-            result = session.exec(query_created).all()
+            result = session.exec(query_created)
             logging.info(f"session.exec - {query_created}")
-            logging.info(f"session.exec.all() - {result}")
+            logging.info(f"session.exec- {result}")
             session.commit()
             return result
-        statment = update(table_name).where(condition).values(**updates)
-        session.exec(statement)
+        # statment = update(table_name).where(condition).values(**updates)
+        # session.exec(statement)
 
-    def delete(self, table_class, condition):
+    def delete(self, client_token: str, condition):
         with Session(self.engine) as session:
-            statement = delete(table_class).where(condition)
-            session.exec(statement)
+            logging.info(f'statement = {condition}')
+            query_created = self.query.create_q(condition, self.metadata,self.engine)
+            result = session.exec(query_created)
+            logging.info(f"session.exec - {query_created}")
+            logging.info(f"session.exec - {result}")
             session.commit()
+        return status.success
 
-    def alter_table(self):
+    def alter_table(self, table_name: str):
         with self.engine.connect() as conn:
             conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR"))
             conn.commit()
 
-    def delete_all(self):
+    def delete_all(self, condition):
         with Session(self.engine) as session:
-            statement = delete(table_class)
-            session.exec(statement)
+            logging.info(f'statement = {condition}')
+            query_created = self.query.create_q(condition, self.metadata,self.engine)
+            result = session.exec(query_created)
+            logging.info(f"session.exec - {query_created}")
+            logging.info(f"session.exec - {result}")
             session.commit()
+        return status.success
 
-    def drop_table(self,table_class):
-        table_class.__table__.drop(self.engine)
+    def table_schema(self, client_token: str, table_name: str):
+        return self.inspector.get_columns(table_name)
+
+    def drop_table(self,client_token: str,table_name: str):
+        logging.info(f"args of drop fucntions : {locals()}")
+        breakpoint()
+        self.metadata.reflect(bind=self.engine)
+        self.metadata.tables[table_name].drop(self.engine)
+        logging.info(f"args of drop function: {locals()}")
+        return {'status': status.success}
 
     def drop_table_all(self):
         SQLModel.metadata.drop_all(self.engine)

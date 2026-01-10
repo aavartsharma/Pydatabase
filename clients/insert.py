@@ -10,4 +10,6 @@ class person(BaseModel):
     cake: str
 
 print(db.insert(person(name='shinomiya',cake='new')))
+print(db.insert(person(name='nasa',cake='cho')))
+print(db.insert(person(name="bob",cake='choping')))
 breakpoint()

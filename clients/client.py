@@ -43,7 +43,7 @@ class BaseModel_Meta(type):
         return super().__new__(cls,name,base,namespace)
 
     def __init__(cls,name: str, base: tuple,namespace: dict,**kwargs):
-        logging.info("__init__ class was called and kwargs is ", kwargs)
+        logging.info(f"__init__ class was called and kwargs = {kwargs}")
         # cls.parmas = params
         # cls.propery = kwargs
         # logging.info(cls.__name__)
@@ -136,7 +136,7 @@ class query():
     def __init__(self,**kwargs: Any):
         logging.info(f"this the query dict: {kwargs}")
         self.kwargs = kwargs
-        logging.info("this is kwargs ", kwargs)
+        logging.info(f"this is kwargs: {kwargs}")
         breakpoint()
         # self.classes_list = list({item[0] for item in list(kwargs.values())[0] })
         # logging.info(self.classes)
@@ -153,6 +153,13 @@ class query():
     @staticmethod
     def insert(*args):
         return query(insert=tuple((i.__name__,None) for i in args))
+
+    @staticmethod
+    def delete(*args):
+        return query(delete=tuple((i.__name__,None) for i in args))
+
+    def update(*args):
+        return query(update=tuple((i.__name__, None) for i in args))
 
     def where(self, statement: SQLExpr) -> Any:
         # self.kwargs.where = 
@@ -287,15 +294,6 @@ class PyDatabaseClient:
             json=payload
         )
     
-    def update(self, collection: str, query: Dict[str, Any], update_data: Dict[str, Any]) -> int:
-        """Update documents in a collection"""
-        response = self._make_request(
-            "POST",
-            f"{collection}/update",
-            {"query": query, "update": update_data}
-        )
-        return response["updated_count"]
-
     @staticmethod
     def change(raw_object):
         breakpoint()
@@ -331,35 +329,65 @@ class PyDatabaseClient:
         except Exception as e:
             logging.error(f"error occured: {e}")
             return e
-    
-    def delete(self,table_name: str, columns: str = None) -> int:
-        """Delete documents from a collection"""
+    def update(self, update_query: query | type) -> int:
+        """Update documents in a collection"""
         payload = {
-            "table_name": table_name,
-            "conditions": columns
+            "query": self.change(update_query)
         }
-        logging.info("colums: ", columns)
         response = self._make_request(
-            method.post,
-            f"table/delete/{self.token}",
-            json=payload
+            "POST",
+            f"table/update/{self.token}",
+            json=payload 
         )
         return response
 
-    def Drop_table(self,table_name:str):
+
+    def delete(self, delete_query: query) -> int:
+        """Delete documents from a collection"""
+        payload = {
+            "query": self.change(delete_query)
+        }
+        response = self._make_request(
+            "POST",
+            f"table/update/{self.token}",
+            json=payload 
+        )
+        return response
+
+    def delete_all(self, delete_all_query: query):
+        payload = {
+                "query": self.change(delete_all_query)
+        }
+        response = self._make_request(
+                "POST",
+                f"table/delete/{self.token}",
+                json=payload
+        )
+        return response
+
+    def drop_table(self,table_name: str):
+        payload = {
+                "table_name": table_name
+        }
+        response = self._make_request(
+                "POST",
+                f"table/drop/{self.token}",
+                json=payload
+        )
+        return response
         pass
 
     def alter_table(self,table_name: str, **data):
         pass
 
     def get_schema(self, table_name: str):
-        payload = {}
+        payload = {'table_table': table_name}
         response = self._make_request(
             method.post,
             f"table/schema/{self.token}",
+            json=payload
         )
-        pass
-
+        return response
     def test(self):
         return self._make_request(method.get, "test")
 
